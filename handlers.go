@@ -77,7 +77,6 @@ func (app *application) dropdownHandler(w http.ResponseWriter, r *http.Request) 
 
 	items, err := app.dropdown.Get(name)
 	if err != nil {
-		fmt.Println(err)
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
@@ -115,7 +114,7 @@ func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"user_id", "item_id", "model_id", "item_category_id", "page_no", "item_no", "price"}
+	requiredParams := []string{"user_id", "item_id", "model_id", "item_category_id", "page_no", "item_no", "foreign_id", "item_name", "price"}
 	optionalParams := []string{}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {

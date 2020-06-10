@@ -3,7 +3,7 @@ package queries
 import "fmt"
 
 const ALL_ITEMS = `
-	SELECT item_id, model_id, item_category_id, page_no, item_no, price FROM item`
+	SELECT item_id, model_id, item_category_id, page_no, item_no, foreign_id, item_name, price FROM item`
 
 const STATE_ID_FROM_STATE = `
 	SELECT S.id FROM state S WHERE S.name = ?`

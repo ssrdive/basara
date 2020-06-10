@@ -43,5 +43,7 @@ type AllItemItem struct {
 	ItemCategoryID string  `json:"item_category_id"`
 	PageNo         string  `json:"page_no"`
 	ItemNo         string  `json:"item_no"`
+	ForeignID      string  `json:"foreign_id"`
+	ItemName       string  `json:"item_name"`
 	Price          float64 `json:"price"`
 }

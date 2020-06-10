@@ -9,11 +9,12 @@ import (
 	"github.com/ssrdive/mysequel"
 )
 
-// ModelModel struct holds methods to query user table
+// ItemModel struct holds methods to query item table
 type ItemModel struct {
 	DB *sql.DB
 }
 
+// Create creates an item
 func (m *ItemModel) Create(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -41,6 +42,7 @@ func (m *ItemModel) Create(rparams, oparams []string, form url.Values) (int64, e
 	return id, nil
 }
 
+// All returns all items
 func (m *ItemModel) All() ([]models.AllItemItem, error) {
 	var res []models.AllItemItem
 	err := mysequel.QueryToStructs(&res, m.DB, queries.ALL_ITEMS)

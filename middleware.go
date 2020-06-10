@@ -47,7 +47,6 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 func (app *application) validateToken(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		rt := r.Header.Get("Authorization")
-		fmt.Println(rt)
 		if rt == "" {
 			app.clientError(w, http.StatusBadRequest)
 			return
