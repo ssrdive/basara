@@ -47,3 +47,17 @@ type AllItemItem struct {
 	ItemName       string  `json:"item_name"`
 	Price          float64 `json:"price"`
 }
+
+type ItemDetails struct {
+	ID               int     `json:"id"`
+	ItemID           string  `json:"item_id"`
+	ModelID          string  `json:"model_id"`
+	ModelName        string  `json:"model_name"`
+	ItemCategoryID   string  `json:"item_category_id"`
+	ItemCategoryName string  `json:"item_category_name"`
+	PageNo           string  `json:"page_no"`
+	ItemNo           string  `json:"item_no"`
+	ForeignID        string  `json:"foreign_id"`
+	ItemName         string  `json:"item_name"`
+	Price            float64 `json:"price"`
+}

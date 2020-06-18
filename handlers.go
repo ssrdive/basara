@@ -107,6 +107,25 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
+func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	items, err := app.item.Details(id)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {

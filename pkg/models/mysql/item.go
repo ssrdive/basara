@@ -52,3 +52,14 @@ func (m *ItemModel) All() ([]models.AllItemItem, error) {
 
 	return res, nil
 }
+
+// All returns all items
+func (m *ItemModel) Details(id string) (models.ItemDetails, error) {
+	var itemDetails models.ItemDetails
+	err := m.DB.QueryRow(queries.ITEM_DETAILS, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
+	if err != nil {
+		return models.ItemDetails{}, err
+	}
+
+	return itemDetails, nil
+}
