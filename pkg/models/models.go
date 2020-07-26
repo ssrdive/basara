@@ -38,6 +38,7 @@ type Dropdown struct {
 }
 
 type AllItemItem struct {
+	ID             int     `json:"id"`
 	ItemID         string  `json:"item_id"`
 	ModelID        string  `json:"model_id"`
 	ItemCategoryID string  `json:"item_category_id"`

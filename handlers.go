@@ -124,6 +124,26 @@ func (app *application) itemSearch(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(results)
 }
 
+func (app *application) itemDetailsById(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	items, err := app.item.DetailsById(id)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		fmt.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
@@ -135,12 +155,38 @@ func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
 	items, err := app.item.Details(id)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
+		fmt.Println(err)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(items)
 
+}
+
+func (app *application) updateItemById(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"item_id", "item_name", "item_price"}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			fmt.Println(param)
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.item.UpdateById(r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
 }
 
 func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
