@@ -107,6 +107,23 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
+func (app *application) itemTest(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Item Test")
+}
+
+func (app *application) itemSearch(w http.ResponseWriter, r *http.Request) {
+	search := r.URL.Query().Get("search")
+
+	results, err := app.item.Search(search)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
 func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]
