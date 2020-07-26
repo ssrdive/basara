@@ -14,6 +14,36 @@ type ItemModel struct {
 	DB *sql.DB
 }
 
+func (m *ItemModel) UpdateById(form url.Values) (int64, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		_ = tx.Commit()
+	}()
+
+	id, err := mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "item",
+			Columns:   []string{"item_name", "price"},
+			Vals:      []interface{}{form.Get("item_name"), form.Get("item_price")},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"},
+		WVals:    []string{form.Get("item_id")},
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
 // Create creates an item
 func (m *ItemModel) Create(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
@@ -53,10 +83,21 @@ func (m *ItemModel) All() ([]models.AllItemItem, error) {
 	return res, nil
 }
 
+// DetailsById returns all items
+func (m *ItemModel) DetailsById(id string) (models.ItemDetails, error) {
+	var itemDetails models.ItemDetails
+	err := m.DB.QueryRow(queries.ITEM_DETAILS_BY_ID, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
+	if err != nil {
+		return models.ItemDetails{}, err
+	}
+
+	return itemDetails, nil
+}
+
 // All returns all items
 func (m *ItemModel) Details(id string) (models.ItemDetails, error) {
 	var itemDetails models.ItemDetails
-	err := m.DB.QueryRow(queries.ITEM_DETAILS, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
+	err := m.DB.QueryRow(queries.ITEM_DETAILS_BY_ITEM_ID, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
 	if err != nil {
 		return models.ItemDetails{}, err
 	}
