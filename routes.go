@@ -18,8 +18,8 @@ func (app *application) routes() http.Handler {
 	r.Handle("/dropdown/condition/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionHandler))).Methods("GET")
 	r.Handle("/item/create", app.validateToken(http.HandlerFunc(app.createItem))).Methods("POST")
 	r.Handle("/item/all", app.validateToken(http.HandlerFunc(app.allItems))).Methods("GET")
+	r.Handle("/item/search", app.validateToken(http.HandlerFunc(app.itemSearch))).Methods("GET")
 	r.Handle("/item/{id}", app.validateToken(http.HandlerFunc(app.itemDetails))).Methods("GET")
-
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

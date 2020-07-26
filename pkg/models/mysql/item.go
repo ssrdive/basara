@@ -63,3 +63,24 @@ func (m *ItemModel) Details(id string) (models.ItemDetails, error) {
 
 	return itemDetails, nil
 }
+
+// Search returns search results
+func (m *ItemModel) Search(search string) ([]models.AllItemItem, error) {
+	var k sql.NullString
+	if search == "" {
+		k = sql.NullString{}
+	} else {
+		k = sql.NullString{
+			Valid:  true,
+			String: "%" + search + "%",
+		}
+	}
+
+	var res []models.AllItemItem
+	err := mysequel.QueryToStructs(&res, m.DB, queries.SEARCH_ITEMS, k, k)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}

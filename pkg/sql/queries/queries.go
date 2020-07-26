@@ -10,3 +10,9 @@ const ITEM_DETAILS = `
 	LEFT JOIN item_category IC ON IC.id = I.item_category_id
 	WHERE I.item_id = ?;
 `
+
+const SEARCH_ITEMS = `
+	SELECT item_id, model_id, item_category_id, page_no, item_no, foreign_id, item_name, price 
+	FROM item
+	WHERE (? IS NULL OR CONCAT(item_id, foreign_id, item_name) LIKE ?)
+`
