@@ -189,6 +189,33 @@ func (app *application) updateItemById(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%d", id)
 }
 
+func (app *application) createBusinessPartner(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"user_id", "business_partner_type_id", "name", "address", "telephone", "email"}
+	optionalParams := []string{}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			fmt.Println(param)
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.businessPartner.Create(requiredParams, optionalParams, r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
+
+}
+
 func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
