@@ -27,6 +27,7 @@ type application struct {
 	dropdown        *mysql.DropdownModel
 	item            *mysql.ItemModel
 	businessPartner *mysql.BusinessPartnerModel
+	account    		*mysql.AccountModel
 }
 
 func main() {
