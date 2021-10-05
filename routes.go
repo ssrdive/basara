@@ -16,7 +16,8 @@ func (app *application) routes() http.Handler {
 	r.HandleFunc("/authenticate", http.HandlerFunc(app.authenticate)).Methods("POST")
 	r.Handle("/dropdown/{name}", app.validateToken(http.HandlerFunc(app.dropdownHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionHandler))).Methods("GET")
-
+	r.Handle("/dropdown/condition/accounts/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionAccountsHandler))).Methods("GET")
+	
 	r.Handle("/item/create", app.validateToken(http.HandlerFunc(app.createItem))).Methods("POST")
 	r.Handle("/item/all", app.validateToken(http.HandlerFunc(app.allItems))).Methods("GET")
 	r.Handle("/item/search", app.validateToken(http.HandlerFunc(app.itemSearch))).Methods("GET")
@@ -26,6 +27,20 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
 	r.Handle("/businesspartner/create", app.validateToken(http.HandlerFunc(app.createBusinessPartner))).Methods("POST")
+
+	r.Handle("/account/category/new", app.validateToken(http.HandlerFunc(app.newAccountCategory))).Methods("POST")
+	r.Handle("/account/new", app.validateToken(http.HandlerFunc(app.newAccount))).Methods("POST")
+	r.Handle("/account/deposit", app.validateToken(http.HandlerFunc(app.accountDeposit))).Methods("POST")
+	r.Handle("/account/journalentry", app.validateToken(http.HandlerFunc(app.accountJournalEntry))).Methods("POST")
+	r.Handle("/account/paymentvoucher", app.validateToken(http.HandlerFunc(app.accountPaymentVoucher))).Methods("POST")
+	r.Handle("/account/ledger/{aid}", app.validateToken(http.HandlerFunc(app.accountLedger))).Methods("GET")
+	r.Handle("/account/chart", app.validateToken(http.HandlerFunc(app.accountChart))).Methods("GET")
+	r.Handle("/paymentvouchers", app.validateToken(http.HandlerFunc(app.paymentVouchers))).Methods("GET")
+	r.Handle("/paymentvoucher/{pid}", app.validateToken(http.HandlerFunc(app.paymentVoucherDetails))).Methods("GET")
+	r.Handle("/transaction/{tid}", app.validateToken(http.HandlerFunc(app.accountTransaction))).Methods("GET")
+	r.Handle("/account/trialbalance", app.validateToken(http.HandlerFunc(app.accountTrialBalance))).Methods("GET")
+
+
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

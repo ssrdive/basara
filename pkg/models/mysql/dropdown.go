@@ -65,3 +65,30 @@ func (m *DropdownModel) ConditionGet(name, where, value string) ([]*models.Dropd
 	}
 	return items, nil
 }
+
+func (m *DropdownModel) ConditionAccountsGet(name, where, value string) ([]*models.DropdownAccount, error) {
+	stmt := fmt.Sprintf(`SELECT id, account_id, name FROM %s WHERE %s = %s ORDER BY name ASC`, name, where, value)
+
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	items := []*models.DropdownAccount{}
+	for rows.Next() {
+		i := &models.DropdownAccount{}
+
+		err = rows.Scan(&i.ID, &i.AccountID, &i.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, i)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
