@@ -137,9 +137,22 @@ type Transaction struct {
 
 type TrialEntry struct {
 	ID          int     `json:"id"`
-	AccountID   int     `json:"account_id"`
+	AccountID   int		`json:"account_id"`
 	AccountName string  `json:"account_name"`
-	Debit       float64 `json:"debit"`
+	Debit		float64 `json:"debit"`
 	Credit      float64 `json:"credit"`
 	Balance     float64 `json:"balance"`
 }
+
+type OrderItemEntry struct {
+	ItemID     			string		`json:"item_id"`
+	Quantity   			string		`json:"qty"`
+	UnitPrice      		string		`json:"unit_price"`
+	DiscountType 		string  	`json:"discount_type"`
+	DiscountAmount		string		`json:"discount_amount"`
+	}
+
+type Bird struct {
+	Species string
+	Description string
+  }

@@ -30,8 +30,8 @@ func (m *ItemModel) UpdateById(form url.Values) (int64, error) {
 	id, err := mysequel.Update(mysequel.UpdateTable{
 		Table: mysequel.Table{
 			TableName: "item",
-			Columns:   []string{"item_name", "price"},
-			Vals:      []interface{}{form.Get("item_name"), form.Get("item_price")},
+			Columns:   []string{"name", "price"},
+			Vals:      []interface{}{form.Get("name"), form.Get("item_price")},
 			Tx:        tx,
 		},
 		WColumns: []string{"id"},
