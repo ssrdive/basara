@@ -172,7 +172,7 @@ func (app *application) updateItemById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"item_id", "item_name", "item_price"}
+	requiredParams := []string{"item_id", "name", "item_price"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
 			fmt.Println(param)
@@ -224,7 +224,7 @@ func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"user_id", "item_id", "model_id", "item_category_id", "page_no", "item_no", "foreign_id", "item_name", "price"}
+	requiredParams := []string{"user_id", "item_id", "model_id", "item_category_id", "page_no", "item_no", "foreign_id", "name", "price"}
 	optionalParams := []string{}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
