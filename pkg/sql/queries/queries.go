@@ -87,3 +87,27 @@ const TRIAL_BALANCE = `
 	) AT ON AT.account_id = A.id
 	ORDER BY account_id ASC
 `
+
+const PURCHASE_ORDER_LIST = `
+	SELECT PO.id, BP.name, BP2.name, PO.total_price
+	FROM purchase_order PO
+	LEFT JOIN business_partner BP ON BP.id = PO.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = PO.warehouse_id
+	ORDER BY PO.id ASC
+`
+
+const PURCHASE_ORDER_DETAILS = `
+	SELECT PO.id, PO.created,  BP.name as supplier, BP2.name as warehouse, PO.price_before_discount, PO.discount_type, PO.discount_amount, PO.total_price, PO.remarks
+	FROM purchase_order PO
+	LEFT JOIN business_partner BP ON BP.id = PO.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = PO.warehouse_id
+	WHERE PO.id = ?
+	ORDER BY PO.id ASC
+`
+
+const PURCHASE_ORDER_ITEM_DETAILS = `
+	SELECT OI.id, I.name, OI.unit_price, OI.qty, OI.discount_type, OI.discount_amount, OI.price_before_discount, OI.total_price, OI.total_reconciled, OI.total_cancelled
+	FROM purchase_order_item OI
+	LEFT JOIN item I ON I.id = OI.item_id
+	WHERE OI.purchase_order_id = ?
+`

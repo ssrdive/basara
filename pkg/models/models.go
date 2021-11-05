@@ -152,7 +152,39 @@ type OrderItemEntry struct {
 	DiscountAmount		string		`json:"discount_amount"`
 	}
 
-type Bird struct {
-	Species string
-	Description string
-  }
+type PurchaseOrderEntry struct {
+	OrderID     		int			`json:"order_id"`
+	Supplier   			string		`json:"supplier"`
+	Warehouse      		string		`json:"warehouse"`
+	TotalPrice 			float64  	`json:"total_price"`
+	}
+
+type PurchaseOrderSummary struct {
+	Order_ID             sql.NullString       	 `json:"order_id"`
+	OrderDate            sql.NullString          `json:"order_date"`
+	Supplier             sql.NullString          `json:"supplier"`
+	Warehouse            sql.NullString          `json:"warehouse"`
+	PriceBeforeDiscount  sql.NullString          `json:"price_before_discount"`
+	DiscountType         sql.NullString          `json:"discount_type"`
+	DiscountAmount       sql.NullString          `json:"discount_amount"`
+	TotalPrice           sql.NullString          `json:"total_price"`
+	Remarks  			 sql.NullString          `json:"remarks"`
+	OrderItemDetails     []OrderItemDetails 	 `json:"order_item_details"`
+}
+
+type OrderItemDetails struct {
+	Order_ID   			sql.NullString     	`json:"order_id"`
+	ItemName 			sql.NullString  	`json:"item_name"`
+	UnitPrice      		sql.NullString 		`json:"unit_price"`
+	Quantity 			sql.NullString 		`json:"quantity"`
+	DiscountType 		sql.NullString 		`json:"discount_type"`
+	DiscountAmount 		sql.NullString 		`json:"discount_amount"`
+	PriceBeforeDiscount sql.NullString 		`json:"price_before_discount"`
+	TotalPrice 			sql.NullString 		`json:"total_price"`
+	TotalReconciled 	sql.NullString 		`json:"total_reconciled"`
+	TotalCancelled 		sql.NullString  	`json:"total_cancelled"`
+}
+
+	
+
+

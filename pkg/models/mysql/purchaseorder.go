@@ -3,10 +3,12 @@ package mysql
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 
 	"github.com/ssrdive/basara/pkg/models"
+	"github.com/ssrdive/basara/pkg/sql/queries"
 	"github.com/ssrdive/mysequel"
 )
 
@@ -87,3 +89,34 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 
 	return oid, nil
 }
+
+func (m *PurchaseOrderModel) PurchaseOrderList() ([]models.PurchaseOrderEntry, error) {
+	var res []models.PurchaseOrderEntry
+	err := mysequel.QueryToStructs(&res, m.DB, queries.PURCHASE_ORDER_LIST)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (m *PurchaseOrderModel) PurchaseOrderDetails(oid int) (models.PurchaseOrderSummary, error) {
+	var id, orderDate, supplier, warehouse, priceBeforeDiscount, discountType, discountAmount, totalPrice, remarks sql.NullString
+	err := m.DB.QueryRow(queries.PURCHASE_ORDER_DETAILS, oid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
+	
+	if err != nil {
+		fmt.Println(err)
+		return models.PurchaseOrderSummary{}, err
+	}
+
+	var orderItems []models.OrderItemDetails
+	err = mysequel.QueryToStructs(&orderItems, m.DB, queries.PURCHASE_ORDER_ITEM_DETAILS, oid)
+	if err != nil {
+		return models.PurchaseOrderSummary{}, err
+	}
+
+	return models.PurchaseOrderSummary{Order_ID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, OrderItemDetails: orderItems}, nil
+}
+
+
+	

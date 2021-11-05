@@ -516,3 +516,35 @@ func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprintf(w, "%d", id)
 }
+
+func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request) {
+	orders, err := app.purchaseOrder.PurchaseOrderList()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orders)
+}
+
+func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pid, err := strconv.Atoi(vars["pid"])
+	fmt.Println(pid)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	purchaseOrder, err := app.purchaseOrder.PurchaseOrderDetails(pid)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(purchaseOrder)
+
+}
