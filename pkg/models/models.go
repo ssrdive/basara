@@ -185,6 +185,46 @@ type OrderItemDetails struct {
 	TotalCancelled 		sql.NullString  	`json:"total_cancelled"`
 }
 
+type GRNItemEntry struct {
+	ItemID     			string		`json:"item_id"`
+	Quantity   			string		`json:"qty"`
+	UnitPrice      		string		`json:"unit_price"`
+	DiscountType 		string  	`json:"discount_type"`
+	DiscountAmount		string		`json:"discount_amount"`
+	}
+
+type GoodReceivedNoteEntry struct {
+	GRNID     			int			`json:"grn_id"`
+	Supplier   			string		`json:"supplier"`
+	Warehouse      		string		`json:"warehouse"`
+	TotalPrice 			float64  	`json:"total_price"`
+	}
+
+type GoodReceivedNoteSummary struct {
+	GRN_ID             	 sql.NullString       	 `json:"grn_id"`
+	OrderDate            sql.NullString          `json:"order_date"`
+	Supplier             sql.NullString          `json:"supplier"`
+	Warehouse            sql.NullString          `json:"warehouse"`
+	PriceBeforeDiscount  sql.NullString          `json:"price_before_discount"`
+	DiscountType         sql.NullString          `json:"discount_type"`
+	DiscountAmount       sql.NullString          `json:"discount_amount"`
+	TotalPrice           sql.NullString          `json:"total_price"`
+	Remarks  			 sql.NullString          `json:"remarks"`
+	GRNItemDetails       []GRNItemDetails 	     `json:"grn_item_details"`
+}
+
+type GRNItemDetails struct {
+	GRN_ID   			sql.NullString     	`json:"grn_id"`
+	ItemName 			sql.NullString  	`json:"item_name"`
+	UnitPrice      		sql.NullString 		`json:"unit_price"`
+	Quantity 			sql.NullString 		`json:"quantity"`
+	DiscountType 		sql.NullString 		`json:"discount_type"`
+	DiscountAmount 		sql.NullString 		`json:"discount_amount"`
+	PriceBeforeDiscount sql.NullString 		`json:"price_before_discount"`
+	TotalPrice 			sql.NullString 		`json:"total_price"`
+}
+
+
 	
 
 

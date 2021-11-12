@@ -531,7 +531,6 @@ func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request
 func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
-	fmt.Println(pid)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -546,5 +545,61 @@ func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Requ
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(purchaseOrder)
+
+}
+
+func (app *application) createGoodsReceivedNote(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"supplier_id", "warehouse_id", "entries"} 
+	optionalParams := []string{"remark"}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.goodsReceivedNote.CreateGoodsReceivedNote(requiredParams, optionalParams, r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
+}
+
+func (app *application) goodsReceivedNoteList(w http.ResponseWriter, r *http.Request) {
+	notes, err := app.goodsReceivedNote.GoodsReceivedNotesList()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(notes)
+}
+
+func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	grnid, err := strconv.Atoi(vars["pid"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	goodsReceivedNote, err := app.goodsReceivedNote.GoodsReceivedNoteDetails(grnid)
+	
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(goodsReceivedNote)
 
 }

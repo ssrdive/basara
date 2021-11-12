@@ -111,3 +111,27 @@ const PURCHASE_ORDER_ITEM_DETAILS = `
 	LEFT JOIN item I ON I.id = OI.item_id
 	WHERE OI.purchase_order_id = ?
 `
+
+const GOODS_RECEIVED_NOTE_LIST = `
+	SELECT GRN.id, BP.name, BP2.name, GRN.total_price
+	FROM goods_received_note GRN
+	LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = GRN.warehouse_id
+	ORDER BY GRN.id ASC
+`
+
+const GOODS_RECEIVED_NOTE_DETAILS = `
+	SELECT GRN.id, GRN.created,  BP.name as supplier, BP2.name as warehouse, GRN.price_before_discount, GRN.discount_type, GRN.discount_amount, GRN.total_price, GRN.remarks
+	FROM goods_received_note GRN
+	LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = GRN.warehouse_id
+	WHERE GRN.id = ?
+	ORDER BY GRN.id ASC
+`
+
+const GRN_ITEM_DETAILS = `
+	SELECT GRNI.id, I.name, GRNI.unit_price, GRNI.qty, GRNI.discount_type, GRNI.discount_amount, GRNI.price_before_discount, GRNI.total_price
+	FROM goods_received_note_item GRNI
+	LEFT JOIN item I ON I.id = GRNI.item_id
+	WHERE GRNI.goods_received_note_id = ?
+`
