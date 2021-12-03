@@ -37,8 +37,8 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 	
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
-		Columns:   []string{"user_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , form.Get("price_before_discount"), form.Get("total_price"), form.Get("remark")},
+		Columns:   []string{"user_id","purcahse_order_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , form.Get("price_before_discount"), form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
 
@@ -84,6 +84,42 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		if err != nil {
 			tx.Rollback()
 			return 0, err
+		}	
+
+		if(form.Get("order_id") != ""){
+			var id, orderItemQty, totalReconciled, totalCancelled float64			
+			
+			ids := []interface{}{ entry.ItemID, form.Get("order_id")}
+
+			err := m.DB.QueryRow(queries.PURCHASE_ORDER_ITEM_COUNT, ids...).Scan(&id, &orderItemQty, &totalReconciled, &totalCancelled)
+			
+			if err == nil {
+				leftToreconciled := orderItemQty - (totalReconciled + totalCancelled)
+				var totalReconciledToBe float64
+				if(leftToreconciled >= quantity){
+					totalReconciledToBe = totalReconciled + quantity
+				}else{
+					totalReconciledToBe = leftToreconciled
+				}			
+
+				itemId, err := mysequel.Update(mysequel.UpdateTable{
+					Table: mysequel.Table{
+						TableName: "purchase_order_item",
+						Columns:   []string{"total_reconciled"},
+						Vals:      []interface{}{totalReconciledToBe},
+						Tx:        tx,
+					},
+					WColumns: []string{"item_id","purchase_order_id"}, 
+					WVals:    []string{entry.ItemID, form.Get("order_id")},
+				})
+
+				fmt.Println(itemId) 
+
+				if err != nil {
+					tx.Rollback()
+					return 0, err
+				}
+			}
 		}
 	}
 

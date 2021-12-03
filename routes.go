@@ -47,7 +47,8 @@ func (app *application) routes() http.Handler {
 
 	r.Handle("/transaction/goodsreceivednote/new", app.validateToken(http.HandlerFunc(app.createGoodsReceivedNote))).Methods("POST")
 	r.Handle("/transaction/goodsreceivednote/list", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteList))).Methods("GET")
-	r.Handle("/transaction/goodsreceivednote/{pid}", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteDetails))).Methods("GET")
+	r.Handle("/transaction/goodsreceivednote/{grnid}", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteDetails))).Methods("GET")
+	r.Handle("/transaction/copypurchaseorder/{pid}", app.validateToken(http.HandlerFunc(app.purchaseOrderData))).Methods("GET")
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

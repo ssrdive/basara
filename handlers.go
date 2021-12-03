@@ -531,6 +531,7 @@ func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request
 func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
+	
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -586,7 +587,7 @@ func (app *application) goodsReceivedNoteList(w http.ResponseWriter, r *http.Req
 
 func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	grnid, err := strconv.Atoi(vars["pid"])
+	grnid, err := strconv.Atoi(vars["grnid"])
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -601,5 +602,27 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(goodsReceivedNote)
+
+}
+
+func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	pid, err := strconv.Atoi(vars["pid"])
+	fmt.Println("--------")
+	fmt.Println(pid)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	purchaseOrder, err := app.purchaseOrder.PurchaseOrderData(pid)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(purchaseOrder)
 
 }
