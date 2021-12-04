@@ -87,8 +87,11 @@ func (m *DropdownModel) ConditionAccountsGet(name, where, value string) ([]*mode
 
 		items = append(items, i)
 	}
+	
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
 	return items, nil
 }
+
+

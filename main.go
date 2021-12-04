@@ -28,6 +28,8 @@ type application struct {
 	item            *mysql.ItemModel
 	businessPartner *mysql.BusinessPartnerModel
 	account         *mysql.AccountModel
+	purchaseOrder   *mysql.PurchaseOrderModel
+	goodsReceivedNote *mysql.GoodsReceivedNoteModel
 }
 
 func main() {
@@ -71,6 +73,8 @@ func main() {
 		item:            &mysql.ItemModel{DB: db},
 		businessPartner: &mysql.BusinessPartnerModel{DB: db},
 		account:         &mysql.AccountModel{DB: db},
+		purchaseOrder:     &mysql.PurchaseOrderModel{DB: db},
+		goodsReceivedNote: &mysql.GoodsReceivedNoteModel{DB: db},
 	}
 
 	srv := &http.Server{

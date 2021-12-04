@@ -1,11 +1,11 @@
 package queries
 
 const ALL_ITEMS = `
-	SELECT id, item_id, model_id, item_category_id, page_no, item_no, foreign_id, item_name, price FROM item
+	SELECT id, item_id, model_id, item_category_id, page_no, item_no, foreign_id, name, price FROM item
 `
 
 const ITEM_DETAILS_BY_ITEM_ID = `
-	SELECT I.id, I.item_id, I.model_id, M.name AS model_name, I.item_category_id, IC.name AS item_category_name, I.page_no, I.item_no, I.foreign_id, I.item_name, I.price
+	SELECT I.id, I.item_id, I.model_id, M.name AS model_name, I.item_category_id, IC.name AS item_category_name, I.page_no, I.item_no, I.foreign_id, I.name, I.price
 	FROM item I 
 	LEFT JOIN model M ON M.id = I.model_id
 	LEFT JOIN item_category IC ON IC.id = I.item_category_id
@@ -13,7 +13,7 @@ const ITEM_DETAILS_BY_ITEM_ID = `
 `
 
 const ITEM_DETAILS_BY_ID = `
-	SELECT I.id, I.item_id, I.model_id, M.name AS model_name, I.item_category_id, IC.name AS item_category_name, I.page_no, I.item_no, I.foreign_id, I.item_name, I.price
+	SELECT I.id, I.item_id, I.model_id, M.name AS model_name, I.item_category_id, IC.name AS item_category_name, I.page_no, I.item_no, I.foreign_id, I.name, I.price
 	FROM item I 
 	LEFT JOIN model M ON M.id = I.model_id
 	LEFT JOIN item_category IC ON IC.id = I.item_category_id
@@ -21,9 +21,9 @@ const ITEM_DETAILS_BY_ID = `
 `
 
 const SEARCH_ITEMS = `
-	SELECT id, item_id, model_id, item_category_id, page_no, item_no, foreign_id, item_name, price 
+	SELECT id, item_id, model_id, item_category_id, page_no, item_no, foreign_id, name, price 
 	FROM item
-	WHERE (? IS NULL OR CONCAT(item_id, foreign_id, item_name) LIKE ?)
+	WHERE (? IS NULL OR CONCAT(item_id, foreign_id, name) LIKE ?)
 `
 
 const PAYMENT_VOUCHERS = `
@@ -86,4 +86,72 @@ const TRIAL_BALANCE = `
 		GROUP BY AT.account_id
 	) AT ON AT.account_id = A.id
 	ORDER BY account_id ASC
+`
+
+const PURCHASE_ORDER_LIST = `
+	SELECT PO.id, BP.name, BP2.name, PO.total_price
+	FROM purchase_order PO
+	LEFT JOIN business_partner BP ON BP.id = PO.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = PO.warehouse_id
+	ORDER BY PO.id ASC
+`
+
+const PURCHASE_ORDER_DETAILS = `
+	SELECT PO.id, PO.created,  BP.name as supplier, BP2.name as warehouse, PO.price_before_discount, PO.discount_type, PO.discount_amount, PO.total_price, PO.remarks
+	FROM purchase_order PO
+	LEFT JOIN business_partner BP ON BP.id = PO.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = PO.warehouse_id
+	WHERE PO.id = ?
+	ORDER BY PO.id ASC
+`
+
+const PURCHASE_ORDER_ITEM_DETAILS = `
+	SELECT OI.id, I.name, OI.unit_price, OI.qty, OI.discount_type, OI.discount_amount, OI.price_before_discount, OI.total_price
+	FROM purchase_order_item OI
+	LEFT JOIN item I ON I.id = OI.item_id
+	WHERE OI.purchase_order_id = ?
+`
+
+const PURCHASE_ORDER_ITEM_COUNT = `
+	SELECT OI.id, OI.qty, OI.total_reconciled, OI.total_cancelled
+	FROM purchase_order_item OI
+	LEFT JOIN item I ON I.id = OI.item_id
+	WHERE OI.item_id = ? AND OI.purchase_order_id = ?
+`
+
+const GOODS_RECEIVED_NOTE_LIST = `
+	SELECT GRN.id, BP.name, BP2.name, GRN.total_price
+	FROM goods_received_note GRN
+	LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = GRN.warehouse_id
+	ORDER BY GRN.id ASC
+`
+
+const GOODS_RECEIVED_NOTE_DETAILS = `
+	SELECT GRN.id, GRN.created,  BP.name as supplier, BP2.name as warehouse, GRN.price_before_discount, GRN.discount_type, GRN.discount_amount, GRN.total_price, GRN.remarks
+	FROM goods_received_note GRN
+	LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id
+	LEFT JOIN business_partner BP2 ON BP2.id = GRN.warehouse_id
+	WHERE GRN.id = ?
+	ORDER BY GRN.id ASC
+`
+
+const GRN_ITEM_DETAILS = `
+	SELECT GRNI.id, I.name, GRNI.unit_price, GRNI.qty, GRNI.discount_type, GRNI.discount_amount, GRNI.price_before_discount, GRNI.total_price
+	FROM goods_received_note_item GRNI
+	LEFT JOIN item I ON I.id = GRNI.item_id
+	WHERE GRNI.goods_received_note_id = ?
+`
+
+const PURCHASE_ORDER_DATA = `
+	SELECT PO.id,  PO.supplier_id , PO.warehouse_id, PO.discount_type, PO.discount_amount
+	FROM purchase_order PO
+	WHERE PO.id = ?
+	ORDER BY PO.id ASC
+`
+
+const PURCHASE_ORDER_ITEM_DATA = `
+	SELECT OI.id, OI.item_id, OI.unit_price, (OI.qty - (OI.total_reconciled + OI.total_cancelled)) as quantity, OI.discount_type, OI.discount_amount 
+	FROM purchase_order_item OI
+	WHERE OI.purchase_order_id = ?
 `
