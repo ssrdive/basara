@@ -17,6 +17,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/dropdown/{name}", app.validateToken(http.HandlerFunc(app.dropdownHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/accounts/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionAccountsHandler))).Methods("GET")
+	r.Handle("/dropdown/custom/grn", app.validateToken(http.HandlerFunc(app.dropdownGrnHandler))).Methods("GET")
 	
 
 	r.Handle("/item/create", app.validateToken(http.HandlerFunc(app.createItem))).Methods("POST")
@@ -50,6 +51,8 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/goodsreceivednote/{grnid}", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteDetails))).Methods("GET")
 	r.Handle("/transaction/copypurchaseorder/{pid}", app.validateToken(http.HandlerFunc(app.purchaseOrderData))).Methods("GET")
 
+	r.Handle("/transaction/landedcost/new", app.validateToken(http.HandlerFunc(app.createLandedCost))).Methods("POST")
+	
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	return standardMiddleware.Then(handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(r))

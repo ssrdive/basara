@@ -222,6 +222,7 @@ type GRNItemDetails struct {
 	TotalPrice 			sql.NullString 		`json:"total_price"`
 }
 
+
 type PurchaseOrderData struct {
 	Order_ID             sql.NullString       	 `json:"order_id"`
 	Supplier_ID          sql.NullString          `json:"supplier_id"`
@@ -241,6 +242,23 @@ type OrderItemData struct {
 	DiscountType 		sql.NullString 		`json:"discount_type"`
 	DiscountAmount 		sql.NullString 		`json:"discount_amount"`
 }
+
+type LandedCostItemEntry struct {
+	CostTypeId   		string		`json:"landed_cost_type_id"`
+	Amount      		string		`json:"amount"`
+	}
+
+
+type GRNItemDetailsWithTotal struct {
+	GRN_ID   			sql.NullString     	`json:"grn_id"`
+	ItemId				int     			`json:"item_id"`
+	ToatlCostPrice		float64				`json:"total_cost_price"`
+	Quantity 			float64 			`json:"quantity"`
+	TotalPrice 			float64				`json:"total_price"`
+	WarehouseId			int 				`json:"warehouse_id"`
+	
+}
+
 
 
 	

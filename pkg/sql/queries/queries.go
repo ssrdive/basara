@@ -155,3 +155,11 @@ const PURCHASE_ORDER_ITEM_DATA = `
 	FROM purchase_order_item OI
 	WHERE OI.purchase_order_id = ?
 `
+
+const GRN_ITEM_DETAILS_WITH_ORDER_TOTAL = `
+	SELECT GRNI.id, GRNI.item_id,  GRNI.total_price as total_cost_price,  GRNI.qty, GRN.price_before_discount as total_price, GRN.warehouse_id 
+	FROM goods_received_note_item GRNI
+	LEFT JOIN item I ON I.id = GRNI.item_id
+	LEFT JOIN goods_received_note GRN ON GRN.id= GRNI.goods_received_note_id
+	WHERE GRNI.goods_received_note_id = ?
+`

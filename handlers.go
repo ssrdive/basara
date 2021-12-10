@@ -108,6 +108,20 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
+func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
+	
+
+	items, err := app.dropdown.GetGrn()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) itemTest(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Item Test")
 }
@@ -608,8 +622,6 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
-	fmt.Println("--------")
-	fmt.Println(pid)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -625,4 +637,28 @@ func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(purchaseOrder)
 
+}
+
+func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"grn_id"} 
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.landedCost.CreatelandedCost(requiredParams,  r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
 }

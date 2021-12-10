@@ -113,8 +113,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 					WVals:    []string{entry.ItemID, form.Get("order_id")},
 				})
 
-				fmt.Println(itemId) 
-
 				if err != nil {
 					tx.Rollback()
 					return 0, err
