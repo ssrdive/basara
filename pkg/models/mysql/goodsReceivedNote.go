@@ -38,7 +38,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
 		Columns:   []string{"user_id","purcahse_order_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , form.Get("price_before_discount"), form.Get("total_price"), form.Get("remark")},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , 0 , form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
 
@@ -46,6 +46,8 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		tx.Rollback()
 		return 0, err
 	}
+
+	var totalPriceBeforeDiscount = 0.0
 
 	for _, entry := range gRNItem {	
 
@@ -102,7 +104,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 					totalReconciledToBe = leftToreconciled
 				}			
 
-				itemId, err := mysequel.Update(mysequel.UpdateTable{
+				_, err := mysequel.Update(mysequel.UpdateTable{
 					Table: mysequel.Table{
 						TableName: "purchase_order_item",
 						Columns:   []string{"total_reconciled"},
@@ -117,8 +119,40 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 					tx.Rollback()
 					return 0, err
 				}
+
+				_, err = mysequel.Insert(mysequel.Table{
+					TableName: "purchase_order_item_reconciliation",
+					Columns:   []string{"purcahse_order_id", "goods_received_note_id", "item_id", "qty"},
+					Vals:      []interface{}{form.Get("order_id") ,grnid, entry.ItemID, quantity},
+					Tx:        tx,
+				})
+				
+				if err != nil {
+					tx.Rollback()
+					return 0, err
+				}
 			}
 		}
+
+		totalPriceBeforeDiscount = totalPriceBeforeDiscount + totalPrice;
+	}
+
+	id, err := mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "goods_received_note",
+			Columns:   []string{"price_before_discount"},
+			Vals:      []interface{}{totalPriceBeforeDiscount},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"}, 
+		WVals:    []string{strconv.FormatInt(grnid, 10)},
+	})
+
+	fmt.Println(id);
+
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
 	return grnid, nil
@@ -149,7 +183,7 @@ func (m *GoodsReceivedNoteModel) GoodsReceivedNoteDetails(grnid int) (models.Goo
 		return models.GoodReceivedNoteSummary{}, err
 	}
 
-	return models.GoodReceivedNoteSummary{GRN_ID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, GRNItemDetails: grnItems}, nil
+	return models.GoodReceivedNoteSummary{GRNID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, GRNItemDetails: grnItems}, nil
 }
 
 

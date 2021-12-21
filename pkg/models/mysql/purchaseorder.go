@@ -38,7 +38,7 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 	oid, err := mysequel.Insert(mysequel.Table{
 		TableName: "purchase_order",
 		Columns:   []string{"user_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , form.Get("price_before_discount"), form.Get("total_price"), form.Get("remark")},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , 0 , form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
 
@@ -46,6 +46,8 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 		tx.Rollback()
 		return 0, err
 	}
+
+	var totalPriceBeforeDiscount = 0.0
 
 	for _, entry := range orderItem {	
 
@@ -85,6 +87,26 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 			tx.Rollback()
 			return 0, err
 		}
+
+		totalPriceBeforeDiscount = totalPriceBeforeDiscount + totalPrice;
+	}
+
+	id, err := mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "purchase_order",
+			Columns:   []string{"price_before_discount"},
+			Vals:      []interface{}{totalPriceBeforeDiscount},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"}, 
+		WVals:    []string{strconv.FormatInt(oid, 10)},
+	})
+
+	fmt.Println(id);
+
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
 	return oid, nil
@@ -115,12 +137,12 @@ func (m *PurchaseOrderModel) PurchaseOrderDetails(oid int) (models.PurchaseOrder
 		return models.PurchaseOrderSummary{}, err
 	}
 
-	return models.PurchaseOrderSummary{Order_ID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, OrderItemDetails: orderItems}, nil
+	return models.PurchaseOrderSummary{OrderID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, OrderItemDetails: orderItems}, nil
 }
 
 func (m *PurchaseOrderModel) PurchaseOrderData(oid int) (models.PurchaseOrderData, error) {
-	var id, supplier_id, warehouse_id, discountType, discountAmount sql.NullString
-	err := m.DB.QueryRow(queries.PURCHASE_ORDER_DATA, oid).Scan(&id, &supplier_id, &warehouse_id,  &discountType, &discountAmount)
+	var id, supplierId, warehouseId, discountType, discountAmount sql.NullString
+	err := m.DB.QueryRow(queries.PURCHASE_ORDER_DATA, oid).Scan(&id, &supplierId, &warehouseId,  &discountType, &discountAmount)
 	
 	if err != nil {
 		fmt.Println(err)
@@ -133,7 +155,7 @@ func (m *PurchaseOrderModel) PurchaseOrderData(oid int) (models.PurchaseOrderDat
 		return models.PurchaseOrderData{}, err
 	}
 
-	return models.PurchaseOrderData{Order_ID: id, Supplier_ID: supplier_id, Warehouse_ID: warehouse_id, DiscountType: discountType, DiscountAmount:discountAmount, OrderItemData: orderItems}, nil
+	return models.PurchaseOrderData{OrderID: id, SupplierID: supplierId, WarehouseID: warehouseId, DiscountType: discountType, DiscountAmount:discountAmount, OrderItemData: orderItems}, nil
 }
 
 

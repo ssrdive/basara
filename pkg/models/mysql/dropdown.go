@@ -66,6 +66,44 @@ func (m *DropdownModel) ConditionGet(name, where, value string) ([]*models.Dropd
 	return items, nil
 }
 
+func (m *DropdownModel) MultiConditionGet(name string, where, operator, value []string) ([]*models.Dropdown, error) {
+	
+	stmt := fmt.Sprintf(`SELECT id, name FROM %s WHERE `, name)
+	for i, entry := range where {
+		stmt = fmt.Sprintf(` %s %s = %s ` , stmt , entry, value[i]);
+		if(i < len(operator)){
+		stmt = fmt.Sprintf(` %s %s `, stmt, operator[i])
+		}
+		
+	}
+	stmt = fmt.Sprintf(`%s ORDER BY name ASC`, stmt);
+
+	fmt.Println(stmt);
+
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	items := []*models.Dropdown{}
+	for rows.Next() {
+		i := &models.Dropdown{}
+
+		err = rows.Scan(&i.ID, &i.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, i)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (m *DropdownModel) ConditionAccountsGet(name, where, value string) ([]*models.DropdownAccount, error) {
 	stmt := fmt.Sprintf(`SELECT id, account_id, name FROM %s WHERE %s = %s ORDER BY name ASC`, name, where, value)
 

@@ -68,7 +68,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "landed_cost_item",
 			Columns:   []string{"landed_cost_id", "landed_cost_type_id", "amount"},
-			Vals:      []interface{}{lcid, entry.CostTypeId, entry.Amount},
+			Vals:      []interface{}{lcid, entry.CostTypeID, entry.Amount},
 			Tx:        tx,
 		})
 
@@ -101,7 +101,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "current_stock",
 			Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id","cost_price","landed_costs","qty","float_qty","price"},
-			Vals:      []interface{}{entry.WarehouseId, entry.ItemId, grnId, unitCost , landedCost , entry.Quantity, 0, (unitCost + landedCost)},
+			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, grnId, unitCost , landedCost , entry.Quantity, 0, (unitCost + landedCost)},
 			Tx:        tx,
 		})
 

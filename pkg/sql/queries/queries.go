@@ -154,6 +154,7 @@ const PURCHASE_ORDER_ITEM_DATA = `
 	SELECT OI.id, OI.item_id, OI.unit_price, (OI.qty - (OI.total_reconciled + OI.total_cancelled)) as quantity, OI.discount_type, OI.discount_amount 
 	FROM purchase_order_item OI
 	WHERE OI.purchase_order_id = ?
+	AND (OI.qty - (OI.total_reconciled + OI.total_cancelled)) != 0
 `
 
 const GRN_ITEM_DETAILS_WITH_ORDER_TOTAL = `
