@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/ssrdive/basara/pkg/models"
 )
@@ -66,19 +67,24 @@ func (m *DropdownModel) ConditionGet(name, where, value string) ([]*models.Dropd
 	return items, nil
 }
 
-func (m *DropdownModel) MultiConditionGet(name string, where, operator, value []string) ([]*models.Dropdown, error) {
+func (m *DropdownModel) MultiConditionGet(name , where, operator, value string) ([]*models.Dropdown, error) {
 	
-	stmt := fmt.Sprintf(`SELECT id, name FROM %s WHERE `, name)
-	for i, entry := range where {
-		stmt = fmt.Sprintf(` %s %s = %s ` , stmt , entry, value[i]);
-		if(i < len(operator)){
-		stmt = fmt.Sprintf(` %s %s `, stmt, operator[i])
-		}
-		
-	}
-	stmt = fmt.Sprintf(`%s ORDER BY name ASC`, stmt);
+	whereList := strings.Split(where, ",");
+	operatorList := strings.Split(operator, ",");
+	valueList := strings.Split(value, ",");
 
-	fmt.Println(stmt);
+	stmt := fmt.Sprintf(`SELECT id, name FROM %s WHERE `, name)
+	stmtCondition := "";
+	for i, entry := range whereList {
+		stmtCondition = fmt.Sprintf(`%s  %s = %s ` , stmtCondition , entry, valueList[i]);
+		fmt.Println(i);
+		fmt.Println(len(operatorList));
+		if(i < len(operatorList)){
+			stmtCondition = fmt.Sprintf(` %s %s `, stmtCondition, operatorList[i])
+		}
+	}
+
+	stmt = fmt.Sprintf(`%s %s ORDER BY name ASC`, stmt, stmtCondition);
 
 	rows, err := m.DB.Query(stmt)
 	if err != nil {

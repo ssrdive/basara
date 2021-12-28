@@ -108,6 +108,31 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
+
+func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+	where := vars["where"]
+	value := vars["value"]
+	operator := vars["operator"]
+	
+	
+	if name == "" || where == "" || value == "" || operator == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	items, err := app.dropdown.MultiConditionGet(name, where, operator, value)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
 	
 
