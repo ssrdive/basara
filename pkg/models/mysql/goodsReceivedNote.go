@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 
@@ -137,7 +136,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		totalPriceBeforeDiscount = totalPriceBeforeDiscount + totalPrice
 	}
 
-	id, err := mysequel.Update(mysequel.UpdateTable{
+	_, err = mysequel.Update(mysequel.UpdateTable{
 		Table: mysequel.Table{
 			TableName: "goods_received_note",
 			Columns:   []string{"price_before_discount"},
@@ -147,8 +146,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		WColumns: []string{"id"},
 		WVals:    []string{strconv.FormatInt(grnid, 10)},
 	})
-
-	fmt.Println(id)
 
 	if err != nil {
 		tx.Rollback()
@@ -173,7 +170,6 @@ func (m *GoodsReceivedNoteModel) GoodsReceivedNoteDetails(grnid int) (models.Goo
 	err := m.DB.QueryRow(queries.GOODS_RECEIVED_NOTE_DETAILS, grnid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
 
 	if err != nil {
-		fmt.Println(err)
 		return models.GoodReceivedNoteSummary{}, err
 	}
 

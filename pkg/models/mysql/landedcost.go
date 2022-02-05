@@ -32,7 +32,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 
 	lcid, err := mysequel.Insert(mysequel.Table{
 		TableName: "landed_cost",
-		Columns:   []string{"user_id","goods_received_note_id"},
+		Columns:   []string{"user_id", "goods_received_note_id"},
 		Vals:      []interface{}{form.Get("user_id"), form.Get("grn_id")},
 		Tx:        tx,
 	})
@@ -49,8 +49,8 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 			Vals:      []interface{}{lcid},
 			Tx:        tx,
 		},
-		WColumns: []string{"id"}, 
-		WVals:    []string{ form.Get("grn_id")},
+		WColumns: []string{"id"},
+		WVals:    []string{form.Get("grn_id")},
 	})
 
 	if err != nil {
@@ -62,9 +62,9 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 	var landedCostTypes []models.LandedCostItemEntry
 	json.Unmarshal([]byte(entries), &landedCostTypes)
 
-	var totalLandedCost = 0.0;
+	var totalLandedCost = 0.0
 
-	for _, entry := range landedCostTypes {	
+	for _, entry := range landedCostTypes {
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "landed_cost_item",
 			Columns:   []string{"landed_cost_id", "landed_cost_type_id", "amount"},
@@ -79,7 +79,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		}
 
 		totalLandedCost = totalLandedCost + costAmount
-		
+
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -95,13 +95,13 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 
 	for _, entry := range grnItems {
 
-		landedCost := (entry.ToatlCostPrice * totalLandedCost)/(entry.TotalPrice * entry.Quantity)
-		unitCost := (entry.ToatlCostPrice/entry.Quantity);	
+		landedCost := (entry.ToatlCostPrice * totalLandedCost) / (entry.TotalPrice * entry.Quantity)
+		unitCost := (entry.ToatlCostPrice / entry.Quantity)
 
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "current_stock",
-			Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id","cost_price","landed_costs","qty","float_qty","price"},
-			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, grnId, unitCost , landedCost , entry.Quantity, 0, (unitCost + landedCost)},
+			Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
+			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, grnId, unitCost, landedCost, entry.Quantity, 0, (unitCost + landedCost)},
 			Tx:        tx,
 		})
 
@@ -113,8 +113,3 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 
 	return lcid, nil
 }
-
-
-
-
-	
