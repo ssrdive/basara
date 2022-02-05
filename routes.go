@@ -52,7 +52,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/copypurchaseorder/{pid}", app.validateToken(http.HandlerFunc(app.purchaseOrderData))).Methods("GET")
 
 	r.Handle("/transaction/landedcost/new", app.validateToken(http.HandlerFunc(app.createLandedCost))).Methods("POST")
-	
+
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	return standardMiddleware.Then(handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(r))

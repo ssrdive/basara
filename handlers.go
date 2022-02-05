@@ -108,15 +108,13 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
-
 func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	name := vars["name"]
 	where := vars["where"]
 	value := vars["value"]
 	operator := vars["operator"]
-	
-	
+
 	if name == "" || where == "" || value == "" || operator == "" {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -134,7 +132,6 @@ func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *
 }
 
 func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
-	
 
 	items, err := app.dropdown.GetGrn()
 	if err != nil {
@@ -538,7 +535,7 @@ func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"supplier_id", "warehouse_id", "entries"} 
+	requiredParams := []string{"supplier_id", "warehouse_id", "entries"}
 	optionalParams := []string{"remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
@@ -570,7 +567,7 @@ func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request
 func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
-	
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -595,7 +592,7 @@ func (app *application) createGoodsReceivedNote(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	requiredParams := []string{"supplier_id", "warehouse_id", "entries"} 
+	requiredParams := []string{"supplier_id", "warehouse_id", "entries"}
 	optionalParams := []string{"remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
@@ -633,7 +630,7 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 	}
 
 	goodsReceivedNote, err := app.goodsReceivedNote.GoodsReceivedNoteDetails(grnid)
-	
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -671,7 +668,7 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	requiredParams := []string{"grn_id"} 
+	requiredParams := []string{"grn_id"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
 			app.clientError(w, http.StatusBadRequest)
@@ -679,7 +676,7 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	id, err := app.landedCost.CreatelandedCost(requiredParams,  r.PostForm)
+	id, err := app.landedCost.CreatelandedCost(requiredParams, r.PostForm)
 	if err != nil {
 		app.serverError(w, err)
 		return
