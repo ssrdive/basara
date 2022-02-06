@@ -173,14 +173,11 @@ type PurchaseOrderSummary struct {
 }
 
 type OrderItemDetails struct {
-	OrderID             sql.NullString `json:"order_id"`
-	ItemName            sql.NullString `json:"item_name"`
-	UnitPrice           sql.NullString `json:"unit_price"`
-	Quantity            sql.NullString `json:"quantity"`
-	DiscountType        sql.NullString `json:"discount_type"`
-	DiscountAmount      sql.NullString `json:"discount_amount"`
-	PriceBeforeDiscount sql.NullString `json:"price_before_discount"`
-	TotalPrice          sql.NullString `json:"total_price"`
+	OrderID    sql.NullString `json:"order_id"`
+	ItemName   sql.NullString `json:"item_name"`
+	UnitPrice  sql.NullString `json:"unit_price"`
+	Quantity   sql.NullString `json:"quantity"`
+	TotalPrice sql.NullString `json:"total_price"`
 }
 
 type GRNItemEntry struct {
@@ -212,14 +209,11 @@ type GoodReceivedNoteSummary struct {
 }
 
 type GRNItemDetails struct {
-	GRNID               sql.NullString `json:"grn_id"`
-	ItemName            sql.NullString `json:"item_name"`
-	UnitPrice           sql.NullString `json:"unit_price"`
-	Quantity            sql.NullString `json:"quantity"`
-	DiscountType        sql.NullString `json:"discount_type"`
-	DiscountAmount      sql.NullString `json:"discount_amount"`
-	PriceBeforeDiscount sql.NullString `json:"price_before_discount"`
-	TotalPrice          sql.NullString `json:"total_price"`
+	GRNID      sql.NullString `json:"grn_id"`
+	ItemName   sql.NullString `json:"item_name"`
+	UnitPrice  sql.NullString `json:"unit_price"`
+	Quantity   sql.NullString `json:"quantity"`
+	TotalPrice sql.NullString `json:"total_price"`
 }
 
 type PurchaseOrderData struct {
@@ -234,12 +228,10 @@ type PurchaseOrderData struct {
 }
 
 type OrderItemData struct {
-	OrderID        sql.NullString `json:"order_id"`
-	ItemID         sql.NullString `json:"item_id"`
-	UnitPrice      sql.NullString `json:"unit_price"`
-	Quantity       sql.NullString `json:"quantity"`
-	DiscountType   sql.NullString `json:"discount_type"`
-	DiscountAmount sql.NullString `json:"discount_amount"`
+	OrderID   sql.NullString `json:"order_id"`
+	ItemID    sql.NullString `json:"item_id"`
+	UnitPrice sql.NullString `json:"unit_price"`
+	Quantity  sql.NullString `json:"quantity"`
 }
 
 type LandedCostItemEntry struct {

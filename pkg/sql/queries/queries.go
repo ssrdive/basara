@@ -106,7 +106,7 @@ const PURCHASE_ORDER_DETAILS = `
 `
 
 const PURCHASE_ORDER_ITEM_DETAILS = `
-	SELECT OI.id, I.name, OI.unit_price, OI.qty, OI.discount_type, OI.discount_amount, OI.price_before_discount, OI.total_price
+	SELECT OI.id, I.name, OI.unit_price, OI.qty, OI.total_price
 	FROM purchase_order_item OI
 	LEFT JOIN item I ON I.id = OI.item_id
 	WHERE OI.purchase_order_id = ?
@@ -137,7 +137,7 @@ const GOODS_RECEIVED_NOTE_DETAILS = `
 `
 
 const GRN_ITEM_DETAILS = `
-	SELECT GRNI.id, I.name, GRNI.unit_price, GRNI.qty, GRNI.discount_type, GRNI.discount_amount, GRNI.price_before_discount, GRNI.total_price
+	SELECT GRNI.id, I.name, GRNI.unit_price, GRNI.qty, GRNI.total_price
 	FROM goods_received_note_item GRNI
 	LEFT JOIN item I ON I.id = GRNI.item_id
 	WHERE GRNI.goods_received_note_id = ?
@@ -151,7 +151,7 @@ const PURCHASE_ORDER_DATA = `
 `
 
 const PURCHASE_ORDER_ITEM_DATA = `
-	SELECT OI.id, OI.item_id, OI.unit_price, (OI.qty - (OI.total_reconciled + OI.total_cancelled)) as quantity, OI.discount_type, OI.discount_amount 
+	SELECT OI.id, OI.item_id, OI.unit_price, (OI.qty - (OI.total_reconciled + OI.total_cancelled)) as quantity
 	FROM purchase_order_item OI
 	WHERE OI.purchase_order_id = ?
 	AND (OI.qty - (OI.total_reconciled + OI.total_cancelled)) != 0
