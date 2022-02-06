@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 
@@ -34,11 +33,11 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 	entities := form.Get("entries")
 	var gRNItem []models.GRNItemEntry
 	json.Unmarshal([]byte(entities), &gRNItem)
-	
+
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
-		Columns:   []string{"user_id","purcahse_order_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount") , form.Get("price_before_discount"), form.Get("total_price"), form.Get("remark")},
+		Columns:   []string{"user_id", "purcahse_order_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount"), 0, form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
 
@@ -47,7 +46,9 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		return 0, err
 	}
 
-	for _, entry := range gRNItem {	
+	var totalPriceBeforeDiscount = 0.0
+
+	for _, entry := range gRNItem {
 
 		unitPrice, err := strconv.ParseFloat(entry.UnitPrice, 32)
 		if err != nil {
@@ -67,53 +68,63 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 			return 0, err
 		}
 
-		var totalPrice float64 
+		var totalPrice float64
 		if entry.DiscountType == "per" {
-			totalPrice = unitPrice * (100 - discountAmount) * quantity / 100 ;
+			totalPrice = unitPrice * (100 - discountAmount) * quantity / 100
 		} else {
-			totalPrice = (unitPrice - discountAmount) * quantity ;
+			totalPrice = (unitPrice - discountAmount) * quantity
 		}
 
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "goods_received_note_item",
 			Columns:   []string{"goods_received_note_id", "item_id", "unit_price", "qty", "discount_type", "discount_amount", "price_before_discount", "total_price"},
-			Vals:      []interface{}{grnid, entry.ItemID, unitPrice, quantity, entry.DiscountType, discountAmount,  unitPrice * quantity, totalPrice},
+			Vals:      []interface{}{grnid, entry.ItemID, unitPrice, quantity, entry.DiscountType, discountAmount, unitPrice * quantity, totalPrice},
 			Tx:        tx,
 		})
-		
+
 		if err != nil {
 			tx.Rollback()
 			return 0, err
-		}	
+		}
 
-		if(form.Get("order_id") != ""){
-			var id, orderItemQty, totalReconciled, totalCancelled float64			
-			
-			ids := []interface{}{ entry.ItemID, form.Get("order_id")}
+		if form.Get("order_id") != "" {
+			var id, orderItemQty, totalReconciled, totalCancelled float64
+
+			ids := []interface{}{entry.ItemID, form.Get("order_id")}
 
 			err := m.DB.QueryRow(queries.PURCHASE_ORDER_ITEM_COUNT, ids...).Scan(&id, &orderItemQty, &totalReconciled, &totalCancelled)
-			
+
 			if err == nil {
 				leftToreconciled := orderItemQty - (totalReconciled + totalCancelled)
 				var totalReconciledToBe float64
-				if(leftToreconciled >= quantity){
+				if leftToreconciled >= quantity {
 					totalReconciledToBe = totalReconciled + quantity
-				}else{
+				} else {
 					totalReconciledToBe = leftToreconciled
-				}			
+				}
 
-				itemId, err := mysequel.Update(mysequel.UpdateTable{
+				_, err := mysequel.Update(mysequel.UpdateTable{
 					Table: mysequel.Table{
 						TableName: "purchase_order_item",
 						Columns:   []string{"total_reconciled"},
 						Vals:      []interface{}{totalReconciledToBe},
 						Tx:        tx,
 					},
-					WColumns: []string{"item_id","purchase_order_id"}, 
+					WColumns: []string{"item_id", "purchase_order_id"},
 					WVals:    []string{entry.ItemID, form.Get("order_id")},
 				})
 
-				fmt.Println(itemId) 
+				if err != nil {
+					tx.Rollback()
+					return 0, err
+				}
+
+				_, err = mysequel.Insert(mysequel.Table{
+					TableName: "purchase_order_item_reconciliation",
+					Columns:   []string{"purcahse_order_id", "goods_received_note_id", "item_id", "qty"},
+					Vals:      []interface{}{form.Get("order_id"), grnid, entry.ItemID, quantity},
+					Tx:        tx,
+				})
 
 				if err != nil {
 					tx.Rollback()
@@ -121,6 +132,24 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 				}
 			}
 		}
+
+		totalPriceBeforeDiscount = totalPriceBeforeDiscount + totalPrice
+	}
+
+	_, err = mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "goods_received_note",
+			Columns:   []string{"price_before_discount"},
+			Vals:      []interface{}{totalPriceBeforeDiscount},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"},
+		WVals:    []string{strconv.FormatInt(grnid, 10)},
+	})
+
+	if err != nil {
+		tx.Rollback()
+		return 0, err
 	}
 
 	return grnid, nil
@@ -139,9 +168,8 @@ func (m *GoodsReceivedNoteModel) GoodsReceivedNotesList() ([]models.GoodReceived
 func (m *GoodsReceivedNoteModel) GoodsReceivedNoteDetails(grnid int) (models.GoodReceivedNoteSummary, error) {
 	var id, orderDate, supplier, warehouse, priceBeforeDiscount, discountType, discountAmount, totalPrice, remarks sql.NullString
 	err := m.DB.QueryRow(queries.GOODS_RECEIVED_NOTE_DETAILS, grnid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
-	
+
 	if err != nil {
-		fmt.Println(err)
 		return models.GoodReceivedNoteSummary{}, err
 	}
 
@@ -151,8 +179,5 @@ func (m *GoodsReceivedNoteModel) GoodsReceivedNoteDetails(grnid int) (models.Goo
 		return models.GoodReceivedNoteSummary{}, err
 	}
 
-	return models.GoodReceivedNoteSummary{GRN_ID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount:discountAmount, TotalPrice:totalPrice, Remarks:remarks, GRNItemDetails: grnItems}, nil
+	return models.GoodReceivedNoteSummary{GRNID: id, OrderDate: orderDate, Supplier: supplier, Warehouse: warehouse, PriceBeforeDiscount: priceBeforeDiscount, DiscountType: discountType, DiscountAmount: discountAmount, TotalPrice: totalPrice, Remarks: remarks, GRNItemDetails: grnItems}, nil
 }
-
-
-	

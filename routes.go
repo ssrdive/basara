@@ -17,7 +17,8 @@ func (app *application) routes() http.Handler {
 	r.Handle("/dropdown/{name}", app.validateToken(http.HandlerFunc(app.dropdownHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/accounts/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionAccountsHandler))).Methods("GET")
-	
+	r.Handle("/dropdown/custom/grn", app.validateToken(http.HandlerFunc(app.dropdownGrnHandler))).Methods("GET")
+	r.Handle("/dropdown/multicondition/{name}/{where}/{value}/{operator}", app.validateToken(http.HandlerFunc(app.dropdownMultiConditionHandler))).Methods("GET")
 
 	r.Handle("/item/create", app.validateToken(http.HandlerFunc(app.createItem))).Methods("POST")
 	r.Handle("/item/all", app.validateToken(http.HandlerFunc(app.allItems))).Methods("GET")
@@ -49,6 +50,8 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/goodsreceivednote/list", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteList))).Methods("GET")
 	r.Handle("/transaction/goodsreceivednote/{grnid}", app.validateToken(http.HandlerFunc(app.goodsReceivedNoteDetails))).Methods("GET")
 	r.Handle("/transaction/copypurchaseorder/{pid}", app.validateToken(http.HandlerFunc(app.purchaseOrderData))).Methods("GET")
+
+	r.Handle("/transaction/landedcost/new", app.validateToken(http.HandlerFunc(app.createLandedCost))).Methods("POST")
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

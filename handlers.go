@@ -108,6 +108,42 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 
 }
 
+func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	name := vars["name"]
+	where := vars["where"]
+	value := vars["value"]
+	operator := vars["operator"]
+
+	if name == "" || where == "" || value == "" || operator == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	items, err := app.dropdown.MultiConditionGet(name, where, operator, value)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
+func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
+
+	items, err := app.dropdown.GetGrn()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) itemTest(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Item Test")
 }
@@ -499,7 +535,7 @@ func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"supplier_id", "warehouse_id", "entries"} 
+	requiredParams := []string{"supplier_id", "warehouse_id", "entries"}
 	optionalParams := []string{"remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
@@ -531,7 +567,7 @@ func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request
 func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
-	
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -556,7 +592,7 @@ func (app *application) createGoodsReceivedNote(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	requiredParams := []string{"supplier_id", "warehouse_id", "entries"} 
+	requiredParams := []string{"supplier_id", "warehouse_id", "entries"}
 	optionalParams := []string{"remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
@@ -594,7 +630,7 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 	}
 
 	goodsReceivedNote, err := app.goodsReceivedNote.GoodsReceivedNoteDetails(grnid)
-	
+
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -608,8 +644,6 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.Atoi(vars["pid"])
-	fmt.Println("--------")
-	fmt.Println(pid)
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
 		return
@@ -625,4 +659,28 @@ func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(purchaseOrder)
 
+}
+
+func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"grn_id", "entries"}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.landedCost.CreatelandedCost(requiredParams, r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
 }
