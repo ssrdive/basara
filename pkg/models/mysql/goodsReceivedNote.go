@@ -62,23 +62,12 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 			return 0, err
 		}
 
-		discountAmount, err := strconv.ParseFloat(entry.DiscountAmount, 32)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		var totalPrice float64
-		if entry.DiscountType == "per" {
-			totalPrice = unitPrice * (100 - discountAmount) * quantity / 100
-		} else {
-			totalPrice = (unitPrice - discountAmount) * quantity
-		}
+		totalPrice := unitPrice * quantity
 
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "goods_received_note_item",
-			Columns:   []string{"goods_received_note_id", "item_id", "unit_price", "qty", "discount_type", "discount_amount", "price_before_discount", "total_price"},
-			Vals:      []interface{}{grnid, entry.ItemID, unitPrice, quantity, entry.DiscountType, discountAmount, unitPrice * quantity, totalPrice},
+			Columns:   []string{"goods_received_note_id", "item_id", "unit_price", "qty", "total_price"},
+			Vals:      []interface{}{grnid, entry.ItemID, unitPrice, quantity, totalPrice},
 			Tx:        tx,
 		})
 

@@ -46,7 +46,7 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 		return 0, err
 	}
 
-	var totalPriceBeforeDiscount = 0.0
+	totalPriceBeforeDiscount := 0.0
 
 	for _, entry := range orderItem {
 
@@ -62,23 +62,12 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 			return 0, err
 		}
 
-		discountAmount, err := strconv.ParseFloat(entry.DiscountAmount, 32)
-		if err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		var totalPrice float64
-		if entry.DiscountType == "per" {
-			totalPrice = unitPrice * (100 - discountAmount) * quantity / 100
-		} else {
-			totalPrice = (unitPrice - discountAmount) * quantity
-		}
+		totalPrice := unitPrice * quantity
 
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "purchase_order_item",
-			Columns:   []string{"purchase_order_id", "item_id", "unit_price", "qty", "discount_type", "discount_amount", "price_before_discount", "total_price"},
-			Vals:      []interface{}{oid, entry.ItemID, unitPrice, quantity, entry.DiscountType, discountAmount, unitPrice * quantity, totalPrice},
+			Columns:   []string{"purchase_order_id", "item_id", "unit_price", "qty", "total_price"},
+			Vals:      []interface{}{oid, entry.ItemID, unitPrice, quantity, totalPrice},
 			Tx:        tx,
 		})
 
