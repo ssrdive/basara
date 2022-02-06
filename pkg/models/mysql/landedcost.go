@@ -42,7 +42,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		return 0, err
 	}
 
-	grnId, err := mysequel.Update(mysequel.UpdateTable{
+	_, err = mysequel.Update(mysequel.UpdateTable{
 		Table: mysequel.Table{
 			TableName: "goods_received_note",
 			Columns:   []string{"landed_cost_id"},
@@ -101,7 +101,7 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "current_stock",
 			Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
-			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, grnId, unitCost, landedCost, entry.Quantity, 0, (unitCost + landedCost)},
+			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, form.Get("grn_id"), unitCost, landedCost, entry.Quantity, 0, (unitCost + landedCost)},
 			Tx:        tx,
 		})
 
