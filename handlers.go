@@ -553,6 +553,25 @@ func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%d", id)
 }
 
+func (app *application) getWarehouseStock(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	wid, err := strconv.Atoi(vars["wid"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	goodsReceivedNote, err := app.warehouseStock.GetWarehouseStock(wid)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(goodsReceivedNote)
+}
+
 func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request) {
 	orders, err := app.purchaseOrder.PurchaseOrderList()
 	if err != nil {

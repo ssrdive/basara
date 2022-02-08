@@ -164,3 +164,12 @@ const GRN_ITEM_DETAILS_WITH_ORDER_TOTAL = `
 	LEFT JOIN goods_received_note GRN ON GRN.id= GRNI.goods_received_note_id
 	WHERE GRNI.goods_received_note_id = ?
 `
+
+const WAREHOUSE_STOCK = `
+	SELECT BP.name AS warehouse_name, I.name AS item_name, SUM(CS.qty) AS quantity, I.price
+	FROM current_stock CS
+	LEFT JOIN item I ON I.id = CS.item_id
+	LEFT JOIN business_partner BP ON BP.id = CS.warehouse_id
+	WHERE CS.warehouse_id = ?
+	GROUP BY warehouse_name, item_name, I.price
+`
