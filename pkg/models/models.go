@@ -247,3 +247,10 @@ type GRNItemDetailsWithTotal struct {
 	TotalPrice     float64        `json:"total_price"`
 	WarehouseId    int            `json:"warehouse_id"`
 }
+
+type WarehouseStockItem struct {
+	WarehouseName string  `json:"warehouse_name"`
+	ItemName      string  `json:"item_name"`
+	Quantity      int     `json:"quantity"`
+	Price         float64 `json:"price"`
+}
