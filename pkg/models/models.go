@@ -152,6 +152,11 @@ type OrderItemEntry struct {
 	DiscountAmount string `json:"discount_amount"`
 }
 
+type TransferItem struct {
+	ItemID   string `json:"item_id"`
+	Quantity string `json:"qty"`
+}
+
 type PurchaseOrderEntry struct {
 	OrderID    int     `json:"order_id"`
 	Supplier   string  `json:"supplier"`
@@ -253,4 +258,17 @@ type WarehouseStockItem struct {
 	ItemName      string  `json:"item_name"`
 	Quantity      int     `json:"quantity"`
 	Price         float64 `json:"price"`
+}
+
+type WarehouseStockItemQty struct {
+	ItemID   string `json:"item_id"`
+	Quantity string `json:"quantity"`
+}
+
+type WarehouseItemStockWithDocumentIDs struct {
+	WarehouseID         int
+	ItemID              int
+	GoodsReceivedNoteID int
+	InventoryTransferID sql.NullInt32
+	Qty                 int
 }

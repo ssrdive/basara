@@ -528,6 +528,31 @@ func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(accounts)
 }
 
+func (app *application) createInventoryTransfer(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"user_id", "from_warehouse_id", "to_warehouse_id", "entries"}
+	optionalParams := []string{"remark"}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.transactions.CreateInventoryTransfer(requiredParams, optionalParams, r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
+}
+
 func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -561,7 +586,7 @@ func (app *application) getWarehouseStock(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	goodsReceivedNote, err := app.warehouseStock.GetWarehouseStock(wid)
+	goodsReceivedNote, err := app.transactions.GetWarehouseStock(wid)
 
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
