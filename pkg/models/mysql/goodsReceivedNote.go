@@ -11,7 +11,7 @@ import (
 	"github.com/ssrdive/mysequel"
 )
 
-// PurchaseOrderModel struct holds database instance
+// GoodsReceivedNoteModel struct holds database instance
 type GoodsReceivedNoteModel struct {
 	DB *sql.DB
 }

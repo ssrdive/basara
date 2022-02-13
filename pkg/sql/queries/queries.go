@@ -1,5 +1,7 @@
 package queries
 
+import "fmt"
+
 const ALL_ITEMS = `
 	SELECT id, item_id, model_id, item_category_id, page_no, item_no, foreign_id, name, price FROM item
 `
@@ -172,4 +174,21 @@ const WAREHOUSE_STOCK = `
 	LEFT JOIN business_partner BP ON BP.id = CS.warehouse_id
 	WHERE CS.warehouse_id = ?
 	GROUP BY warehouse_name, item_name, I.price
+`
+
+func WAREHOSUE_ITEM_QTY(warehouseID, itemIDs interface{}) string {
+	return fmt.Sprintf(`
+		SELECT CS.item_id, SUM(CS.qty) AS quantity
+		FROM current_stock CS
+		WHERE CS.warehouse_id = %v AND CS.item_id IN (%v)
+		GROUP BY CS.item_id`,
+		warehouseID, itemIDs)
+}
+
+const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS = `
+	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty
+	FROM current_stock CS
+	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
+	WHERE CS.warehouse_id = ? AND CS.item_id = ?
+	ORDER BY GRN.created ASC
 `
