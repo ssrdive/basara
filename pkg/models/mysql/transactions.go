@@ -18,6 +18,16 @@ type Transactions struct {
 	DB *sql.DB
 }
 
+func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInventoryTransferItem, error) {
+	var res []models.PendingInventoryTransferItem
+	err := mysequel.QueryToStructs(&res, m.DB, queries.INVENTORY_TRANSFER_ITEMS, itid)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (m *Transactions) GetWarehouseStock(wid int) ([]models.WarehouseStockItem, error) {
 	var res []models.WarehouseStockItem
 	err := mysequel.QueryToStructs(&res, m.DB, queries.WAREHOUSE_STOCK, wid)

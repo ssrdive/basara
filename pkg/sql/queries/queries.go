@@ -208,3 +208,11 @@ const GET_PENDING_TRANSFERS_BY_WAREHOUSE = `
 	LEFT JOIN business_partner TBP ON TBP.id = IT.to_warehouse_id
 	WHERE resolution IS NULL AND IT.to_warehouse_id = ?
 `
+
+const INVENTORY_TRANSFER_ITEMS = `
+	SELECT I.name AS item_name, I.item_id, SUM(ITI.qty) AS qty
+	FROM inventory_transfer_item ITI
+	LEFT JOIN item I ON ITI.item_id = I.id
+	WHERE ITI.inventory_transfer_id = ?
+	GROUP BY I.name, I.item_id
+`

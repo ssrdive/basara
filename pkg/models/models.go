@@ -281,3 +281,9 @@ type PendingInventoryTransfer struct {
 	From    string `json:"from"`
 	To      string `json:"to"`
 }
+
+type PendingInventoryTransferItem struct {
+	ItemName string `json:"item_name"`
+	ItemID   string `json:"item_id"`
+	Quantity int    `json:"qty"`
+}
