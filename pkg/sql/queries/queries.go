@@ -216,3 +216,10 @@ const INVENTORY_TRANSFER_ITEMS = `
 	WHERE ITI.inventory_transfer_id = ?
 	GROUP BY I.name, I.item_id
 `
+
+const INVENTORY_TRANSFER_ITEMS_FOR_ACTION = `
+	SELECT IT.from_warehouse_id, IT.to_warehouse_id, ITI.prev_inventory_transfer_id, ITI.goods_received_note_id, item_id, qty
+	FROM inventory_transfer_item ITI
+	LEFT JOIN inventory_transfer IT ON IT.id = ITI.inventory_transfer_id
+	WHERE ITI.inventory_transfer_id = ?
+`

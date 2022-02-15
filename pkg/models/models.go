@@ -287,3 +287,12 @@ type PendingInventoryTransferItem struct {
 	ItemID   string `json:"item_id"`
 	Quantity int    `json:"qty"`
 }
+
+type InventoryTransferItemForAction struct {
+	FromWarehouseID         int
+	ToWarehouseID           int
+	PrevInventoryTransferID sql.NullInt32
+	GoodsReceivedNoteID     int
+	ItemID                  int
+	Quantity                int
+}

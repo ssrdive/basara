@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"time"
 
 	"github.com/ssrdive/basara/pkg/models"
 	"github.com/ssrdive/basara/pkg/sql/queries"
@@ -202,6 +203,92 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	}
 
 	return itid, nil
+}
+
+func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form url.Values) (int64, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		_ = tx.Commit()
+	}()
+
+	itid := form.Get("inventory_transfer_id")
+	userID := form.Get("user_id")
+	resolution := form.Get("resolution")
+	resolutionRemarks := form.Get("resolution_remarks")
+
+	var transferItemsForAction []models.InventoryTransferItemForAction
+	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.INVENTORY_TRANSFER_ITEMS_FOR_ACTION, itid)
+	if err != nil {
+		return 0, err
+	}
+
+	for _, actionItem := range transferItemsForAction {
+		if resolution == "Approved" || resolution == "Provisional" {
+			var costPrice float64
+			var landedCost float64
+			var price float64
+			if actionItem.PrevInventoryTransferID.Valid {
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = 0 WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+
+				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32).Scan(&costPrice, &landedCost, &price)
+				if err != nil {
+					return 0, err
+				}
+			} else {
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = 0 WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+
+				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID).Scan(&costPrice, &landedCost, &price)
+				if err != nil {
+					return 0, err
+				}
+			}
+
+			_, err = mysequel.Insert(mysequel.Table{
+				TableName: "current_stock",
+				Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
+				Vals:      []interface{}{actionItem.ToWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, itid, costPrice, landedCost, actionItem.Quantity, 0, price},
+				Tx:        tx,
+			})
+			if err != nil {
+				return 0, err
+			}
+		} else if resolution == "Rejected" {
+			if actionItem.PrevInventoryTransferID.Valid {
+				_, err = tx.Exec("UPDATE current_stock SET qty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+				if err != nil {
+					return 0, err
+				}
+			} else {
+				_, err = tx.Exec("UPDATE current_stock SET fqty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				if err != nil {
+					return 0, err
+				}
+			}
+		}
+	}
+
+	_, err = mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "inventory_transfer",
+			Columns:   []string{"resolved_by", "resolved_on", "resolution", "resolution_remarks"},
+			Vals:      []interface{}{userID, time.Now().Format("2006-01-02 15:04:05"), resolution, resolutionRemarks},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"},
+		WVals:    []string{itid},
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return 0, nil
 }
 
 func ConvertArrayToString(arr []interface{}) string {

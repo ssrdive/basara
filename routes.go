@@ -61,6 +61,8 @@ func (app *application) routes() http.Handler {
 
 	r.Handle("/transaction/inventorytransferitems/{itid}", app.validateToken(http.HandlerFunc(app.inventoryTransferItems))).Methods("GET")
 
+	r.Handle("/transaction/inventorytransferaction", app.validateToken(http.HandlerFunc(app.inventoryTransferAction))).Methods("POST")
+
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	return standardMiddleware.Then(handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(r))
