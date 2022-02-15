@@ -59,7 +59,7 @@ func (app *application) routes() http.Handler {
 
 	r.Handle("/transaction/inventorytransfer/{type}/{warehouse}", app.validateToken(http.HandlerFunc(app.getPendingInventoryTransfers))).Methods("GET")
 
-	r.Handle("/transaction/inventorytransfer/items/{itid}", app.validateToken(http.HandlerFunc(app.inventoryTransferItems))).Methods("GET")
+	r.Handle("/transaction/inventorytransferitems/{itid}", app.validateToken(http.HandlerFunc(app.inventoryTransferItems))).Methods("GET")
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 
