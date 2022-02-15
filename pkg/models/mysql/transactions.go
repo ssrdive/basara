@@ -225,7 +225,7 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 
 	var resolvedBy sql.NullInt32
 	err = tx.QueryRow("SELECT resolved_by FROM inventory_transfer WHERE id = ?", itid).Scan(&resolvedBy)
-	if resolution.Valid {
+	if resolvedBy.Valid {
 		return 0, nil
 	}
 
