@@ -223,6 +223,12 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	resolution := form.Get("resolution")
 	resolutionRemarks := form.Get("resolution_remarks")
 
+	var resolvedBy sql.NullInt32
+	err = tx.QueryRow("SELECT resolved_by FROM inventory_transfer WHERE id = ?", itid).Scan(&resolvedBy)
+	if resolution.Valid {
+		return 0, nil
+	}
+
 	var transferItemsForAction []models.InventoryTransferItemForAction
 	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.INVENTORY_TRANSFER_ITEMS_FOR_ACTION, itid)
 	if err != nil {
