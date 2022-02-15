@@ -192,3 +192,19 @@ const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS = `
 	WHERE CS.warehouse_id = ? AND CS.item_id = ?
 	ORDER BY GRN.created ASC
 `
+
+const GET_PENDING_TRANSFERS = `
+	SELECT IT.id, IT.created, FBP.name AS from_warehouse, TBP.name AS to_warehouse
+	FROM inventory_transfer IT
+	LEFT JOIN business_partner FBP ON FBP.id = IT.from_warehouse_id
+	LEFT JOIN business_partner TBP ON TBP.id = IT.to_warehouse_id
+	WHERE resolution IS NULL
+`
+
+const GET_PENDING_TRANSFERS_BY_WAREHOUSE = `
+	SELECT IT.id, IT.created, FBP.name AS from_warehouse, TBP.name AS to_warehouse
+	FROM inventory_transfer IT
+	LEFT JOIN business_partner FBP ON FBP.id = IT.from_warehouse_id
+	LEFT JOIN business_partner TBP ON TBP.id = IT.to_warehouse_id
+	WHERE resolution IS NULL AND IT.to_warehouse_id = ?
+`

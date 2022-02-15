@@ -274,3 +274,10 @@ type WarehouseItemStockWithDocumentIDs struct {
 	InventoryTransferID sql.NullInt32
 	Qty                 int
 }
+
+type PendingInventoryTransfer struct {
+	Id      int    `json:"id"`
+	Created string `json:"created"`
+	From    string `json:"from"`
+	To      string `json:"to"`
+}

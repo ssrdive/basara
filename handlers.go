@@ -578,6 +578,26 @@ func (app *application) createOrder(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%d", id)
 }
 
+func (app *application) getPendingInventoryTransfers(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userType := vars["type"]
+	wid, err := strconv.Atoi(vars["warehouse"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	pendingTransfers, err := app.transactions.GetPendingTransfers(wid, userType)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(pendingTransfers)
+}
+
 func (app *application) getWarehouseStock(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	wid, err := strconv.Atoi(vars["wid"])

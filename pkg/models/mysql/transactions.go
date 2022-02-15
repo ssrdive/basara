@@ -28,6 +28,21 @@ func (m *Transactions) GetWarehouseStock(wid int) ([]models.WarehouseStockItem, 
 	return res, nil
 }
 
+func (m *Transactions) GetPendingTransfers(warehouse int, userType string) ([]models.PendingInventoryTransfer, error) {
+	var res []models.PendingInventoryTransfer
+	var err error
+	if userType == "Admin" {
+		err = mysequel.QueryToStructs(&res, m.DB, queries.GET_PENDING_TRANSFERS)
+	} else {
+		err = mysequel.QueryToStructs(&res, m.DB, queries.GET_PENDING_TRANSFERS_BY_WAREHOUSE, warehouse)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
