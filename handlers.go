@@ -49,7 +49,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 
 	claims["username"] = u.Username
 	claims["name"] = u.Name
-	claims["exp"] = time.Now().Add(time.Minute * 180).Unix()
+	claims["exp"] = time.Now().Add(time.Minute * 1440).Unix()
 
 	ts, err := token.SignedString(app.secret)
 	if err != nil {
@@ -57,7 +57,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.UserResponse{u.ID, u.Username, u.Name, u.Type, ts}
+	user := models.UserResponse{u.ID, u.Username, u.Name, u.Type, ts, u.WarehouseID}
 	js, err := json.Marshal(user)
 	if err != nil {
 		app.serverError(w, err)
