@@ -272,7 +272,7 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 					return 0, err
 				}
 			} else {
-				_, err = tx.Exec("UPDATE current_stock SET fqty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				_, err = tx.Exec("UPDATE current_stock SET qty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
 				if err != nil {
 					return 0, err
 				}
