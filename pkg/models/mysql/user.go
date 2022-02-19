@@ -43,7 +43,7 @@ func (m *UserModel) Insert(groupID int, firstName, middleName, lastName, commonN
 func (m *UserModel) Get(username, password string) (*models.JWTUser, error) {
 	u := &models.JWTUser{}
 
-	err := m.DB.QueryRow("SELECT user.id, username, password, user.name, type, warehouse_id, COALESCE(BP.name, '0') AS warehouse_name FROM user LEFT JOIN business_partner BP ON BP.id = user.warehouse_id WHERE username = ?", username).Scan(&u.ID, &u.Username, &u.Password, &u.Name, &u.Type, &u.WarehouseID)
+	err := m.DB.QueryRow("SELECT user.id, username, password, user.name, type, warehouse_id, COALESCE(BP.name, '0') AS warehouse_name FROM user LEFT JOIN business_partner BP ON BP.id = user.warehouse_id WHERE username = ?", username).Scan(&u.ID, &u.Username, &u.Password, &u.Name, &u.Type, &u.WarehouseID, &u.WarehouseName)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, models.ErrNoRecord
