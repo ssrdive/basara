@@ -205,6 +205,11 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	return itid, nil
 }
 
+func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values) (int64, error) {
+	fmt.Println(form)
+	return 0, nil
+}
+
 func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {

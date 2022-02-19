@@ -528,6 +528,32 @@ func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(accounts)
 }
 
+func (app *application) createInvoice(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	requiredParams := []string{"user_id", "from_warehouse", "customer_contact", "discount", "items"}
+	optionalParams := []string{}
+
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	id, err := app.transactions.CreateInvoice(requiredParams, optionalParams, r.PostForm)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	fmt.Fprintf(w, "%d", id)
+}
+
 func (app *application) inventoryTransferAction(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
