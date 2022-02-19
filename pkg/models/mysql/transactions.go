@@ -232,7 +232,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 	// if the transferring items are present in the source warehouse
 
 	var warehouseStock []models.WarehouseStockItemQty
-	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse_id"), ConvertArrayToString(invoiceItemIDs)))
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
 	if err != nil {
 		return 0, err
 	}
@@ -256,8 +256,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 	// Validate if the transferring quantities are
 	// present in the source warehouse
 
-	for i, transferItem := range invoiceItems {
-		transferQty, _ := strconv.Atoi(transferItem.Quantity)
+	for i, invoiceItem := range invoiceItems {
+		transferQty, _ := strconv.Atoi(invoiceItem.Quantity)
 		presentQty, _ := strconv.Atoi(warehouseStock[i].Quantity)
 
 		if transferQty > presentQty {
