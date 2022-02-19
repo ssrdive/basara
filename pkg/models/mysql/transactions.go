@@ -265,12 +265,48 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 		}
 	}
 
+	var invoice []models.WarehouseItemStockWithDocumentIDs
+
+	// Select items to be transferred from the source warehouse
+	// based on their goods received note ids. Priority is given to
+	// move the items from old GRNs first.
+
+	for _, invoiceItem := range invoiceItems {
+		itemQty, _ := strconv.Atoi(invoiceItem.Quantity)
+
+		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDs
+		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS, form.Get("from_warehouse"), invoiceItem.ItemID)
+
+		for _, stockItem := range warehouseItemWithDocumentIDs {
+			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse"))
+			subtractQty := 0
+			if stockItem.Qty > itemQty {
+				subtractQty = itemQty
+				itemQty = 0
+			} else {
+				subtractQty = stockItem.Qty
+				itemQty = itemQty - stockItem.Qty
+			}
+			invoice = append(invoice, models.WarehouseItemStockWithDocumentIDs{
+				WarehouseID:         fromWarehouseID,
+				ItemID:              stockItem.ItemID,
+				GoodsReceivedNoteID: stockItem.GoodsReceivedNoteID,
+				InventoryTransferID: stockItem.InventoryTransferID,
+				Qty:                 subtractQty,
+			})
+			if itemQty == 0 {
+				break
+			}
+		}
+	}
+
+	fmt.Println(invoice)
+
 	// userID := form.Get("user_id")
 	// customerContact := form.Get("customer_contact")
 	// discount := form.Get("discount")
 	// fromWarehouse := form.Get("from_warehouse")
 
-	fmt.Println(form)
 	return 0, nil
 }
 
