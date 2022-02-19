@@ -206,6 +206,70 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 }
 
 func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values) (int64, error) {
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		_ = tx.Commit()
+	}()
+
+	items := form.Get("items")
+	var invoiceItems []models.TransferItem
+	json.Unmarshal([]byte(items), &invoiceItems)
+
+	var invoiceItemIDs = make([]interface{}, len(invoiceItems))
+
+	for i, item := range invoiceItems {
+		invoiceItemIDs[i] = item.ItemID
+	}
+
+	// Load warehouse stock with transfer items to validate
+	// if the transferring items are present in the source warehouse
+
+	var warehouseStock []models.WarehouseStockItemQty
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse_id"), ConvertArrayToString(invoiceItemIDs)))
+	if err != nil {
+		return 0, err
+	}
+
+	if len(warehouseStock) != len(invoiceItemIDs) {
+		return 0, errors.New("selected items does not exist in the source warehouse")
+	}
+
+	sort.Slice(invoiceItems, func(i, j int) bool {
+		lValue, _ := strconv.Atoi(invoiceItems[i].ItemID)
+		rValue, _ := strconv.Atoi(invoiceItems[j].ItemID)
+		return lValue < rValue
+	})
+
+	sort.Slice(warehouseStock, func(i, j int) bool {
+		lValue, _ := strconv.Atoi(invoiceItems[i].ItemID)
+		rValue, _ := strconv.Atoi(invoiceItems[j].ItemID)
+		return lValue < rValue
+	})
+
+	// Validate if the transferring quantities are
+	// present in the source warehouse
+
+	for i, transferItem := range invoiceItems {
+		transferQty, _ := strconv.Atoi(transferItem.Quantity)
+		presentQty, _ := strconv.Atoi(warehouseStock[i].Quantity)
+
+		if transferQty > presentQty {
+			return 0, errors.New("transfer quantity is higher than the present quantity")
+		}
+	}
+
+	// userID := form.Get("user_id")
+	// customerContact := form.Get("customer_contact")
+	// discount := form.Get("discount")
+	// fromWarehouse := form.Get("from_warehouse")
+
 	fmt.Println(form)
 	return 0, nil
 }
