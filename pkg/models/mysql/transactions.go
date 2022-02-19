@@ -265,7 +265,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 		}
 	}
 
-	var invoice []models.WarehouseItemStockWithDocumentIDs
+	var invoice []models.WarehouseItemStockWithDocumentIDsAndPrices
 
 	// Select items to be transferred from the source warehouse
 	// based on their goods received note ids. Priority is given to
@@ -274,8 +274,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 	for _, invoiceItem := range invoiceItems {
 		itemQty, _ := strconv.Atoi(invoiceItem.Quantity)
 
-		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDs
-		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS, form.Get("from_warehouse"), invoiceItem.ItemID)
+		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDsAndPrices
+		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES, form.Get("from_warehouse"), invoiceItem.ItemID)
 
 		for _, stockItem := range warehouseItemWithDocumentIDs {
 			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse"))
@@ -287,12 +287,14 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 				subtractQty = stockItem.Qty
 				itemQty = itemQty - stockItem.Qty
 			}
-			invoice = append(invoice, models.WarehouseItemStockWithDocumentIDs{
+			invoice = append(invoice, models.WarehouseItemStockWithDocumentIDsAndPrices{
 				WarehouseID:         fromWarehouseID,
 				ItemID:              stockItem.ItemID,
 				GoodsReceivedNoteID: stockItem.GoodsReceivedNoteID,
 				InventoryTransferID: stockItem.InventoryTransferID,
 				Qty:                 subtractQty,
+				CostPrice:           stockItem.CostPrice,
+				Price:               stockItem.Price,
 			})
 			if itemQty == 0 {
 				break

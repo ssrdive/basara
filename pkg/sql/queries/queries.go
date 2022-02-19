@@ -194,6 +194,15 @@ const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS = `
 	ORDER BY GRN.created ASC
 `
 
+const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES = `
+	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, CS.cost_price, I.price
+	FROM current_stock CS
+	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
+	LEFT JOIN item I ON I.id = CS.item_id
+	WHERE CS.warehouse_id = ? AND CS.item_id = ?
+	ORDER BY GRN.created ASC
+`
+
 const GET_PENDING_TRANSFERS = `
 	SELECT IT.id, IT.created, FBP.name AS from_warehouse, TBP.name AS to_warehouse
 	FROM inventory_transfer IT

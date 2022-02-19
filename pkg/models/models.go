@@ -277,6 +277,16 @@ type WarehouseItemStockWithDocumentIDs struct {
 	Qty                 int
 }
 
+type WarehouseItemStockWithDocumentIDsAndPrices struct {
+	WarehouseID         int
+	ItemID              int
+	GoodsReceivedNoteID int
+	InventoryTransferID sql.NullInt32
+	Qty                 int
+	CostPrice           float64
+	Price               float64
+}
+
 type PendingInventoryTransfer struct {
 	Id      int    `json:"id"`
 	Created string `json:"created"`
