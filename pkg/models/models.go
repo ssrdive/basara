@@ -9,12 +9,13 @@ import (
 var ErrNoRecord = errors.New("models: no matching record found")
 
 type UserResponse struct {
-	ID          int    `json:"id"`
-	Username    string `json:"username"`
-	Name        string `json:"name"`
-	Role        string `json:"role"`
-	Token       string `json:"token"`
-	WarehouseID int    `json:"warehouse_id"`
+	ID            int    `json:"id"`
+	Username      string `json:"username"`
+	Name          string `json:"name"`
+	Role          string `json:"role"`
+	Token         string `json:"token"`
+	WarehouseID   int    `json:"warehouse_id"`
+	WarehouseName string `json:"warehouse_name"`
 }
 
 type User struct {
@@ -27,12 +28,13 @@ type User struct {
 }
 
 type JWTUser struct {
-	ID          int
-	Username    string
-	Password    string
-	Name        string
-	Type        string
-	WarehouseID int
+	ID            int
+	Username      string
+	Password      string
+	Name          string
+	Type          string
+	WarehouseID   int
+	WarehouseName string
 }
 
 type Dropdown struct {

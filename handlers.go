@@ -57,7 +57,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := models.UserResponse{u.ID, u.Username, u.Name, u.Type, ts, u.WarehouseID}
+	user := models.UserResponse{u.ID, u.Username, u.Name, u.Type, ts, u.WarehouseID, u.WarehouseName}
 	js, err := json.Marshal(user)
 	if err != nil {
 		app.serverError(w, err)

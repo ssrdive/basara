@@ -174,6 +174,7 @@ const WAREHOUSE_STOCK = `
 	LEFT JOIN business_partner BP ON BP.id = CS.warehouse_id
 	WHERE CS.warehouse_id = ?
 	GROUP BY warehouse_name, item_name, I.price
+	HAVING SUM(CS.qty) > 0
 `
 
 func WAREHOSUE_ITEM_QTY(warehouseID, itemIDs interface{}) string {
