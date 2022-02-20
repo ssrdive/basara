@@ -319,8 +319,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 	price = 0
 
 	for _, item := range invoice {
-		costPrice = costPrice + item.CostPrice
-		price = price + item.Price
+		costPrice = costPrice + (item.CostPrice * float64(item.Qty))
+		price = price + (item.Price * float64(item.Qty))
 		if item.InventoryTransferID.Valid {
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32)
 			if err != nil {
