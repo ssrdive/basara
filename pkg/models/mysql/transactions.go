@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"sort"
 	"strconv"
@@ -302,12 +303,73 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 		}
 	}
 
-	fmt.Println(invoice)
+	iid, err := mysequel.Insert(mysequel.Table{
+		TableName: "invoice",
+		Columns:   []string{"user_id", "warehouse_id", "cost_price", "price_before_discount", "discount", "price_after_discount", "customer_contact"},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("from_warehouse"), 0, 0, form.Get("discount"), 0, form.Get("customer_contact")},
+		Tx:        tx,
+	})
+	if err != nil {
+		return 0, err
+	}
 
-	// userID := form.Get("user_id")
-	// customerContact := form.Get("customer_contact")
-	// discount := form.Get("discount")
-	// fromWarehouse := form.Get("from_warehouse")
+	var costPrice float64
+	costPrice = 0
+	var price float64
+	price = 0
+
+	for _, item := range invoice {
+		costPrice = costPrice + item.CostPrice
+		price = price + item.Price
+		if item.InventoryTransferID.Valid {
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32)
+			if err != nil {
+				return 0, err
+			}
+
+			_, err = mysequel.Insert(mysequel.Table{
+				TableName: "invoice_item",
+				Columns:   []string{"invoice_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "qty", "cost_price", "price"},
+				Vals:      []interface{}{iid, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32, item.Qty, item.CostPrice, item.Price},
+				Tx:        tx,
+			})
+			if err != nil {
+				return 0, err
+			}
+		} else {
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID)
+			if err != nil {
+				return 0, err
+			}
+
+			_, err = mysequel.Insert(mysequel.Table{
+				TableName: "invoice_item",
+				Columns:   []string{"invoice_id", "item_id", "goods_received_note_id", "qty", "cost_price", "price"},
+				Vals:      []interface{}{iid, item.ItemID, item.GoodsReceivedNoteID, item.Qty, item.CostPrice, item.Price},
+				Tx:        tx,
+			})
+			if err != nil {
+				return 0, err
+			}
+		}
+	}
+
+	discount, _ := strconv.Atoi(form.Get("discount"))
+	priceAfterDiscount := math.Round((price*(float64(100)-float64(discount))/100)*100) / 100
+
+	_, err = mysequel.Update(mysequel.UpdateTable{
+		Table: mysequel.Table{
+			TableName: "invoice",
+			Columns:   []string{"cost_price", "price_before_discount", "price_after_discount"},
+			Vals:      []interface{}{costPrice, price, priceAfterDiscount},
+			Tx:        tx,
+		},
+		WColumns: []string{"id"},
+		WVals:    []string{strconv.FormatInt(iid, 10)},
+	})
+	if err != nil {
+		return 0, err
+	}
 
 	return 0, nil
 }

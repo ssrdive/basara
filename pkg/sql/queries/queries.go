@@ -195,7 +195,7 @@ const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS = `
 `
 
 const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES = `
-	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, CS.cost_price, I.price
+	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, CS.price AS cost_price, I.price
 	FROM current_stock CS
 	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
 	LEFT JOIN item I ON I.id = CS.item_id
