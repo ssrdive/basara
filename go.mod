@@ -12,5 +12,6 @@ require (
 	github.com/justinas/alice v1.2.0
 	github.com/ssrdive/cidium v0.0.0-20200607160304-4e91c2542db5 // indirect
 	github.com/ssrdive/mysequel v0.0.0-20200607152047-bfb6d81da001
+	github.com/ssrdive/scribe v0.0.3 // indirect
 	golang.org/x/crypto v0.0.0-20200604202706-70a84ac30bf9
 )
