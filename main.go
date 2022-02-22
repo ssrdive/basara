@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ssrdive/basara/pkg/models/mysql"
+	"github.com/ssrdive/scribe"
 )
 
 type application struct {
@@ -27,7 +28,7 @@ type application struct {
 	dropdown          *mysql.DropdownModel
 	item              *mysql.ItemModel
 	businessPartner   *mysql.BusinessPartnerModel
-	account           *mysql.AccountModel
+	account           *scribe.AccountModel
 	purchaseOrder     *mysql.PurchaseOrderModel
 	goodsReceivedNote *mysql.GoodsReceivedNoteModel
 	landedCost        *mysql.LandedCostModel
@@ -74,7 +75,7 @@ func main() {
 		dropdown:          &mysql.DropdownModel{DB: db},
 		item:              &mysql.ItemModel{DB: db},
 		businessPartner:   &mysql.BusinessPartnerModel{DB: db},
-		account:           &mysql.AccountModel{DB: db},
+		account:           &scribe.AccountModel{DB: db},
 		purchaseOrder:     &mysql.PurchaseOrderModel{DB: db},
 		goodsReceivedNote: &mysql.GoodsReceivedNoteModel{DB: db},
 		landedCost:        &mysql.LandedCostModel{DB: db},
