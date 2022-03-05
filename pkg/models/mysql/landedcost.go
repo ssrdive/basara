@@ -38,7 +38,6 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 	})
 
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -54,7 +53,6 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 	})
 
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -72,16 +70,18 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 			Tx:        tx,
 		})
 
+		if err != nil {
+			return 0, err
+		}
+
 		costAmount, err := strconv.ParseFloat(entry.Amount, 32)
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 
 		totalLandedCost = totalLandedCost + costAmount
 
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 	}
@@ -89,7 +89,6 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 	var grnItems []models.GRNItemDetailsWithTotal
 	err = mysequel.QueryToStructs(&grnItems, m.DB, queries.GRN_ITEM_DETAILS_WITH_ORDER_TOTAL, form.Get("grn_id"))
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -106,7 +105,6 @@ func (m *LandedCostModel) CreatelandedCost(rparams []string, form url.Values) (i
 		})
 
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 	}

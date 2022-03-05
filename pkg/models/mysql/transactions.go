@@ -181,7 +181,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				return 0, err
 			}
 
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.InventoryTransferID.Int32)
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.InventoryTransferID.Int32)
 			if err != nil {
 				return 0, err
 			}
@@ -196,7 +196,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				return 0, err
 			}
 
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID)
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID)
 			if err != nil {
 				return 0, err
 			}
@@ -410,14 +410,14 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 			var landedCost float64
 			var price float64
 			if actionItem.PrevInventoryTransferID.Valid {
-				_, err = tx.Exec("UPDATE current_stock SET float_qty = 0 WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
 
 				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
 					return 0, err
 				}
 			} else {
-				_, err = tx.Exec("UPDATE current_stock SET float_qty = 0 WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
 
 				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
@@ -436,12 +436,12 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 			}
 		} else if resolution == "Rejected" {
 			if actionItem.PrevInventoryTransferID.Valid {
-				_, err = tx.Exec("UPDATE current_stock SET qty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
 				if err != nil {
 					return 0, err
 				}
 			} else {
-				_, err = tx.Exec("UPDATE current_stock SET qty = qty + float_qty WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
 				if err != nil {
 					return 0, err
 				}
