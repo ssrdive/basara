@@ -42,7 +42,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 	})
 
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 
@@ -52,13 +51,11 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 		unitPrice, err := strconv.ParseFloat(entry.UnitPrice, 32)
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 
 		quantity, err := strconv.ParseFloat(entry.Quantity, 32)
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 
@@ -72,7 +69,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 		})
 
 		if err != nil {
-			tx.Rollback()
 			return 0, err
 		}
 
@@ -104,7 +100,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 				})
 
 				if err != nil {
-					tx.Rollback()
 					return 0, err
 				}
 
@@ -116,7 +111,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 				})
 
 				if err != nil {
-					tx.Rollback()
 					return 0, err
 				}
 			}
@@ -137,7 +131,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 	})
 
 	if err != nil {
-		tx.Rollback()
 		return 0, err
 	}
 

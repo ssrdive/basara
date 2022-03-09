@@ -810,7 +810,7 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	id, err := app.landedCost.CreatelandedCost(requiredParams, r.PostForm)
+	id, err := app.landedCost.CreateLandedCost(requiredParams, r.PostForm)
 	if err != nil {
 		app.serverError(w, err)
 		return
