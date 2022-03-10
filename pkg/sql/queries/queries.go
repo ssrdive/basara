@@ -133,7 +133,8 @@ const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS = `
 `
 
 const WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES = `
-	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, CS.price AS cost_price, I.price
+	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, 
+	CS.cost_price AS cost_price_without_landed_costs, CS.price AS cost_price, I.price
 	FROM current_stock CS
 	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
 	LEFT JOIN item I ON I.id = CS.item_id
@@ -170,4 +171,8 @@ const INVENTORY_TRANSFER_ITEMS_FOR_ACTION = `
 	FROM inventory_transfer_item ITI
 	LEFT JOIN inventory_transfer IT ON IT.id = ITI.inventory_transfer_id
 	WHERE ITI.inventory_transfer_id = ?
+`
+
+const OFFICER_ACC_NO = `
+	SELECT account_id FROM user WHERE id = ?
 `

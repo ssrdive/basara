@@ -802,7 +802,7 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	requiredParams := []string{"grn_id", "entries"}
+	requiredParams := []string{"grn_id", "entries", "user_id"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {
 			app.clientError(w, http.StatusBadRequest)
@@ -810,7 +810,7 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	id, err := app.landedCost.CreatelandedCost(requiredParams, r.PostForm)
+	id, err := app.landedCost.CreateLandedCost(requiredParams, r.PostForm)
 	if err != nil {
 		app.serverError(w, err)
 		return

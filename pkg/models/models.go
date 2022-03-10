@@ -204,13 +204,14 @@ type WarehouseItemStockWithDocumentIDs struct {
 }
 
 type WarehouseItemStockWithDocumentIDsAndPrices struct {
-	WarehouseID         int
-	ItemID              int
-	GoodsReceivedNoteID int
-	InventoryTransferID sql.NullInt32
-	Qty                 int
-	CostPrice           float64
-	Price               float64
+	WarehouseID                 int
+	ItemID                      int
+	GoodsReceivedNoteID         int
+	InventoryTransferID         sql.NullInt32
+	Qty                         int
+	CostPriceWithoutLandedCosts float64
+	CostPrice                   float64
+	Price                       float64
 }
 
 type PendingInventoryTransfer struct {
