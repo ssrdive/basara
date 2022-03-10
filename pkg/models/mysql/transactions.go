@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/ssrdive/scribe"
+	smodels "github.com/ssrdive/scribe/models"
 	"math"
 	"net/url"
 	"sort"
@@ -19,6 +21,11 @@ import (
 type Transactions struct {
 	DB *sql.DB
 }
+
+const (
+	SparePartsSalesAccountID       = 200
+	SparePartsCostOfSalesAccountID = 202
+)
 
 func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInventoryTransferItem, error) {
 	var res []models.PendingInventoryTransferItem
@@ -262,7 +269,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 		presentQty, _ := strconv.Atoi(warehouseStock[i].Quantity)
 
 		if transferQty > presentQty {
-			return 0, errors.New("transfer quantity is higher than the present quantity")
+			return 0, errors.New("invoice quantity is higher than the present quantity")
 		}
 	}
 
@@ -289,13 +296,14 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 				itemQty = itemQty - stockItem.Qty
 			}
 			invoice = append(invoice, models.WarehouseItemStockWithDocumentIDsAndPrices{
-				WarehouseID:         fromWarehouseID,
-				ItemID:              stockItem.ItemID,
-				GoodsReceivedNoteID: stockItem.GoodsReceivedNoteID,
-				InventoryTransferID: stockItem.InventoryTransferID,
-				Qty:                 subtractQty,
-				CostPrice:           stockItem.CostPrice,
-				Price:               stockItem.Price,
+				WarehouseID:                 fromWarehouseID,
+				ItemID:                      stockItem.ItemID,
+				GoodsReceivedNoteID:         stockItem.GoodsReceivedNoteID,
+				InventoryTransferID:         stockItem.InventoryTransferID,
+				Qty:                         subtractQty,
+				CostPriceWithoutLandedCosts: stockItem.CostPriceWithoutLandedCosts,
+				CostPrice:                   stockItem.CostPrice,
+				Price:                       stockItem.Price,
 			})
 			if itemQty == 0 {
 				break
@@ -305,8 +313,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 
 	iid, err := mysequel.Insert(mysequel.Table{
 		TableName: "invoice",
-		Columns:   []string{"user_id", "warehouse_id", "cost_price", "price_before_discount", "discount", "price_after_discount", "customer_contact"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("from_warehouse"), 0, 0, form.Get("discount"), 0, form.Get("customer_contact")},
+		Columns:   []string{"user_id", "warehouse_id", "cost_price", "price_before_discount", "discount", "price_after_discount", "customer_name", "customer_contact"},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("from_warehouse"), 0, 0, form.Get("discount"), 0, form.Get("customer_name"), form.Get("customer_contact")},
 		Tx:        tx,
 	})
 	if err != nil {
@@ -317,10 +325,13 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 	costPrice = 0
 	var price float64
 	price = 0
+	var costPriceWithoutLCs float64
+	costPriceWithoutLCs = 0
 
 	for _, item := range invoice {
 		costPrice = costPrice + (item.CostPrice * float64(item.Qty))
 		price = price + (item.Price * float64(item.Qty))
+		costPriceWithoutLCs = costPriceWithoutLCs + (item.CostPriceWithoutLandedCosts * float64(item.Qty))
 		if item.InventoryTransferID.Valid {
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32)
 			if err != nil {
@@ -367,6 +378,33 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, form url.Values)
 		WColumns: []string{"id"},
 		WVals:    []string{strconv.FormatInt(iid, 10)},
 	})
+	if err != nil {
+		return 0, err
+	}
+
+	tid, err := mysequel.Insert(mysequel.Table{
+		TableName: "transaction",
+		Columns:   []string{"user_id", "datetime", "posting_date", "remark"},
+		Vals:      []interface{}{form.Get("user_id"), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02"), fmt.Sprintf("INVOICE %d", iid)},
+		Tx:        tx,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var cashAccountID int
+	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
+	if err != nil {
+		return 0, err
+	}
+
+	journalEntries := []smodels.JournalEntry{
+		{Account: fmt.Sprintf("%d", cashAccountID), Debit: fmt.Sprintf("%f", priceAfterDiscount), Credit: ""},
+		{Account: fmt.Sprintf("%d", SparePartsSalesAccountID), Debit: "", Credit: fmt.Sprintf("%f", priceAfterDiscount)},
+		{Account: fmt.Sprintf("%d", SparePartsCostOfSalesAccountID), Debit: fmt.Sprintf("%f", costPriceWithoutLCs), Credit: ""},
+		{Account: fmt.Sprintf("%d", StockAccountID), Debit: "", Credit: fmt.Sprintf("%f", costPriceWithoutLCs)},
+	}
+	err = scribe.IssueJournalEntries(tx, tid, journalEntries)
 	if err != nil {
 		return 0, err
 	}

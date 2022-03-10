@@ -25,7 +25,7 @@ type LandedCostModel struct {
 	DB *sql.DB
 }
 
-// CreateLandedCost creats a Landed Cost
+// CreateLandedCost creates a Landed Cost
 func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -71,7 +71,28 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 
 	var totalLandedCost = 0.0
 
+	tid, err := mysequel.Insert(mysequel.Table{
+		TableName: "transaction",
+		Columns:   []string{"user_id", "datetime", "posting_date", "remark"},
+		Vals:      []interface{}{form.Get("user_id"), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02"), fmt.Sprintf("GOODS RECEIVED NOTE %s", form.Get("grn_id"))},
+		Tx:        tx,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	var journalEntries []smodels.JournalEntry
 	for _, entry := range landedCostTypes {
+		costAmount, err := strconv.ParseFloat(entry.Amount, 32)
+		if err != nil {
+			return 0, err
+		}
+		totalLandedCost = totalLandedCost + costAmount
+
+		if costAmount == 0 {
+			continue
+		}
+
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "landed_cost_item",
 			Columns:   []string{"landed_cost_id", "landed_cost_type_id", "amount"},
@@ -82,11 +103,22 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 			return 0, err
 		}
 
-		costAmount, err := strconv.ParseFloat(entry.Amount, 32)
+		var expenseAccountID sql.NullInt32
+		var payableAccountID sql.NullInt32
+		err = tx.QueryRow("SELECT expense_account_id, payable_account_id FROM landed_cost_type WHERE id = ?", entry.CostTypeID).Scan(&expenseAccountID, &payableAccountID)
 		if err != nil {
 			return 0, err
 		}
-		totalLandedCost = totalLandedCost + costAmount
+
+		if !expenseAccountID.Valid || !payableAccountID.Valid {
+			err = errors.New("expense account or payable account for landed cost item is not configured")
+			return 0, err
+		}
+
+		journalEntries = append(journalEntries,
+			smodels.JournalEntry{Account: fmt.Sprintf("%d", expenseAccountID.Int32), Debit: entry.Amount, Credit: ""},
+			smodels.JournalEntry{Account: fmt.Sprintf("%d", payableAccountID.Int32), Debit: "", Credit: entry.Amount},
+		)
 	}
 
 	var grnItems []models.GRNItemDetailsWithTotal
@@ -121,24 +153,13 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 
 	if !supplierAccountID.Valid {
 		err = errors.New("account id not specified for supplier")
-		//tx.Rollback()
 		return 0, err
 	}
 
-	tid, err := mysequel.Insert(mysequel.Table{
-		TableName: "transaction",
-		Columns:   []string{"user_id", "datetime", "posting_date", "remark"},
-		Vals:      []interface{}{form.Get("user_id"), time.Now().Format("2006-01-02 15:04:05"), time.Now().Format("2006-01-02"), fmt.Sprintf("GOODS RECEIVED NOTE %s", form.Get("grn_id"))},
-		Tx:        tx,
-	})
-	if err != nil {
-		return 0, err
-	}
-
-	journalEntries := []smodels.JournalEntry{
-		{Account: fmt.Sprintf("%d", StockAccountID), Debit: fmt.Sprintf("%f", grnCostPrice), Credit: ""},
-		{Account: fmt.Sprintf("%d", supplierAccountID.Int32), Debit: "", Credit: fmt.Sprintf("%f", grnCostPrice)},
-	}
+	journalEntries = append(journalEntries,
+		smodels.JournalEntry{Account: fmt.Sprintf("%d", StockAccountID), Debit: fmt.Sprintf("%f", grnCostPrice), Credit: ""},
+		smodels.JournalEntry{Account: fmt.Sprintf("%d", supplierAccountID.Int32), Debit: "", Credit: fmt.Sprintf("%f", grnCostPrice)},
+	)
 	err = scribe.IssueJournalEntries(tx, tid, journalEntries)
 	if err != nil {
 		return 0, err
