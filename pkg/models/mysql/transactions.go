@@ -220,17 +220,14 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	if err != nil {
 		return 0, err
 	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			return
-		}
-		_ = tx.Commit()
-	}()
 
 	items := form.Get("items")
 	var invoiceItems []models.TransferItem
-	json.Unmarshal([]byte(items), &invoiceItems)
+	err = json.Unmarshal([]byte(items), &invoiceItems)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
 
 	var invoiceItemIDs = make([]interface{}, len(invoiceItems))
 
@@ -244,6 +241,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	var warehouseStock []models.WarehouseStockItemQty
 	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -286,6 +284,10 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDsAndPrices
 		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES, form.Get("from_warehouse"), invoiceItem.ItemID)
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
 
 		for _, stockItem := range warehouseItemWithDocumentIDs {
 			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse"))
@@ -320,6 +322,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		Tx:        tx,
 	})
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -337,6 +340,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		if item.InventoryTransferID.Valid {
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32)
 			if err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 
@@ -347,11 +351,13 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 				Tx:        tx,
 			})
 			if err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 		} else {
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID)
 			if err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 
@@ -362,6 +368,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 				Tx:        tx,
 			})
 			if err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 		}
@@ -381,6 +388,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		WVals:    []string{strconv.FormatInt(iid, 10)},
 	})
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -391,12 +399,14 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		Tx:        tx,
 	})
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
 	var cashAccountID int
 	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -408,6 +418,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 	err = scribe.IssueJournalEntries(tx, tid, journalEntries)
 	if err != nil {
+		tx.Rollback()
 		return 0, err
 	}
 
@@ -421,7 +432,13 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 	defer resp.Body.Close()
 
-	return 0, nil
+	if form.Get("execution_type") == "plan" {
+		tx.Rollback()
+		return 0, nil
+	} else {
+		tx.Commit()
+		return iid, nil
+	}
 }
 
 func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form url.Values) (int64, error) {
