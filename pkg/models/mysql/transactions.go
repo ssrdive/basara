@@ -428,14 +428,13 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 	requestURL := fmt.Sprintf("https://richcommunication.dialog.lk/api/sms/inline/send.php?destination=%s&q=%s&message=%s", telephone, apiKey, url.QueryEscape(message))
 
-	resp, _ := http.Get(requestURL)
-
-	defer resp.Body.Close()
-
 	if form.Get("execution_type") == "plan" {
 		tx.Rollback()
 		return 0, nil
 	} else {
+		resp, _ := http.Get(requestURL)
+		defer resp.Body.Close()
+
 		tx.Commit()
 		return iid, nil
 	}
