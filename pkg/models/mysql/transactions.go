@@ -367,8 +367,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		}
 	}
 
-	discount, _ := strconv.Atoi(form.Get("discount"))
-	priceAfterDiscount := math.Round((price*(float64(100)-float64(discount))/100)*100) / 100
+	discount, _ := strconv.ParseFloat(form.Get("discount"), 32)
+	priceAfterDiscount := math.Round((price*(float64(100)-discount)/100)*100) / 100
 
 	_, err = mysequel.Update(mysequel.UpdateTable{
 		Table: mysequel.Table{
