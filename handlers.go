@@ -545,7 +545,7 @@ func (app *application) createInvoice(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	id, err := app.transactions.CreateInvoice(requiredParams, optionalParams, r.PostForm)
+	id, err := app.transactions.CreateInvoice(requiredParams, optionalParams, app.fgAPIKey, r.PostForm)
 	if err != nil {
 		app.serverError(w, err)
 		return

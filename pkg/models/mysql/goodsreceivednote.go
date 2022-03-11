@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -32,7 +33,10 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 	entities := form.Get("entries")
 	var gRNItem []models.GRNItemEntry
-	json.Unmarshal([]byte(entities), &gRNItem)
+	err = json.Unmarshal([]byte(entities), &gRNItem)
+	if err != nil {
+		return 0, err
+	}
 
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
@@ -56,6 +60,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 		quantity, err := strconv.ParseFloat(entry.Quantity, 32)
 		if err != nil {
+			fmt.Println(entry)
 			return 0, err
 		}
 
