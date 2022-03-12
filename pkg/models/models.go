@@ -123,6 +123,10 @@ type GRNItemEntry struct {
 	DiscountAmount string `json:"discount_amount"`
 }
 
+type CashInHand struct {
+	Amount float64 `json:"amount"`
+}
+
 type GoodReceivedNoteEntry struct {
 	GRNID      int     `json:"grn_id"`
 	Supplier   string  `json:"supplier"`

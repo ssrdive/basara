@@ -176,3 +176,15 @@ const INVENTORY_TRANSFER_ITEMS_FOR_ACTION = `
 const OFFICER_ACC_NO = `
 	SELECT account_id FROM user WHERE id = ?
 `
+
+const GET_CASH_IN_HAND = `
+	SELECT COALESCE(AT.debit-AT.credit, 0) AS balance
+	FROM account A
+	LEFT JOIN (
+		SELECT AT.account_id, SUM(CASE WHEN AT.type = "DR" THEN AT.amount ELSE 0 END) AS debit, SUM(CASE WHEN AT.type = "CR" THEN AT.amount ELSE 0 END) AS credit 
+		FROM account_transaction AT
+        WHERE AT.account_id = (SELECT account_id FROM user WHERE id = ?)
+		GROUP BY AT.account_id
+	) AT ON AT.account_id = A.id
+	WHERE AT.account_id = (SELECT account_id FROM user WHERE id = ?)
+`

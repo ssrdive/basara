@@ -29,6 +29,15 @@ const (
 	SparePartsCostOfSalesAccountID = 202
 )
 
+func (m *Transactions) GetCashInHand(uid int) (models.CashInHand, error) {
+	var r models.CashInHand
+	err := m.DB.QueryRow(queries.GET_CASH_IN_HAND, uid, uid).Scan(&r.Amount)
+	if err != nil {
+		return models.CashInHand{}, nil
+	}
+	return r, nil
+}
+
 func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInventoryTransferItem, error) {
 	var res []models.PendingInventoryTransferItem
 	err := mysequel.QueryToStructs(&res, m.DB, queries.INVENTORY_TRANSFER_ITEMS, itid)
