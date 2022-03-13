@@ -67,6 +67,8 @@ func (app *application) routes() http.Handler {
 
 	r.Handle("/transaction/invoice", app.validateToken(http.HandlerFunc(app.createInvoice))).Methods("POST")
 
+	r.Handle("/reporting/invoicesearch", app.validateToken(http.HandlerFunc(app.invoiceSearch))).Methods("GET")
+
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	return standardMiddleware.Then(handlers.CORS(handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}), handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}), handlers.AllowedOrigins([]string{"*"}))(r))

@@ -188,3 +188,11 @@ const GET_CASH_IN_HAND = `
 	) AT ON AT.account_id = A.id
 	WHERE AT.account_id = (SELECT account_id FROM user WHERE id = ?)
 `
+
+const INVOICE_SEARCH = `
+	SELECT I.id, I.created, U.name AS issuer, BP.name AS issuing_location, cost_price, price_before_discount, discount, price_after_discount, customer_name, customer_contact
+	FROM invoice I
+	LEFT JOIN user U ON U.id = I.user_id
+	LEFT JOIN business_partner BP ON BP.id = I.warehouse_id
+	WHERE (? IS NULL OR I.user_id = ?) AND DATE(I.created) BETWEEN ? AND ?
+`

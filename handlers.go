@@ -528,6 +528,33 @@ func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(accounts)
 }
 
+func (app *application) invoiceSearch(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startdate")
+	_, err := time.Parse("2006-01-02", startDate)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	endDate := r.URL.Query().Get("enddate")
+	_, err = time.Parse("2006-01-02", endDate)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	officer := r.URL.Query().Get("officer")
+
+	results, err := app.reporting.InvoiceSearch(startDate, endDate, officer)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
 func (app *application) createInvoice(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {

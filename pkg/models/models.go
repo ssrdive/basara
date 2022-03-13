@@ -239,3 +239,16 @@ type InventoryTransferItemForAction struct {
 	ItemID                  int
 	Quantity                int
 }
+
+type InvoiceSearchItem struct {
+	ID                  int     `json:"id"`
+	Created             string  `json:"created"`
+	Issuer              string  `json:"issuer"`
+	IssuingLocation     string  `json:"issuing_location"`
+	CostPrice           float64 `json:"cost_price"`
+	PriceBeforeDiscount float64 `json:"price_before_discount"`
+	Discount            float64 `json:"discount"`
+	PriceAfterDiscount  float64 `json:"price_after_discount"`
+	CustomerName        string  `json:"customer_name"`
+	CustomerContact     string  `json:"customer_contact"`
+}
