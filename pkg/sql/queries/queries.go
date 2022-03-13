@@ -106,12 +106,12 @@ const GRN_ITEM_DETAILS_WITH_ORDER_TOTAL = `
 `
 
 const WAREHOUSE_STOCK = `
-	SELECT BP.name AS warehouse_name, I.name AS item_name, SUM(CS.qty) AS quantity, I.price
+	SELECT BP.name AS warehouse_name, I.id, I.item_id, I.foreign_id, I.name AS item_name, SUM(CS.qty) AS quantity, I.price
 	FROM current_stock CS
 	LEFT JOIN item I ON I.id = CS.item_id
 	LEFT JOIN business_partner BP ON BP.id = CS.warehouse_id
 	WHERE CS.warehouse_id = ?
-	GROUP BY warehouse_name, item_name, I.price
+	GROUP BY warehouse_name, I.id, item_id, foreign_id, item_name, I.price
 	HAVING SUM(CS.qty) > 0
 `
 
