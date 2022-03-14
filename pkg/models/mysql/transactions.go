@@ -324,6 +324,24 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		}
 	}
 
+	var cashAccountID sql.NullInt32
+	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if !cashAccountID.Valid {
+		tx.Rollback()
+		err = errors.New("cash in hand account not specififed")
+		return 0, err
+	}
+
+	if form.Get("execution_type") == "plan" {
+		tx.Rollback()
+		return 0, nil
+	}
+
 	iid, err := mysequel.Insert(mysequel.Table{
 		TableName: "invoice",
 		Columns:   []string{"user_id", "warehouse_id", "cost_price", "price_before_discount", "discount", "price_after_discount", "customer_name", "customer_contact"},
@@ -381,24 +399,6 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 				return 0, err
 			}
 		}
-	}
-
-	var cashAccountID sql.NullInt32
-	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	if !cashAccountID.Valid {
-		tx.Rollback()
-		err = errors.New("cash in hand account not specififed")
-		return 0, err
-	}
-
-	if form.Get("execution_type") == "plan" {
-		tx.Rollback()
-		return 0, nil
 	}
 
 	discount, _ := strconv.ParseFloat(form.Get("discount"), 32)
