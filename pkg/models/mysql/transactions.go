@@ -383,6 +383,24 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		}
 	}
 
+	var cashAccountID sql.NullInt32
+	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+
+	if !cashAccountID.Valid {
+		tx.Rollback()
+		err = errors.New("cash in hand account not specififed")
+		return 0, err
+	}
+
+	if form.Get("execution_type") == "plan" {
+		tx.Rollback()
+		return 0, nil
+	}
+
 	discount, _ := strconv.ParseFloat(form.Get("discount"), 32)
 	priceAfterDiscount := math.Round((price*(float64(100)-discount)/100)*100) / 100
 
@@ -412,15 +430,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		return 0, err
 	}
 
-	var cashAccountID int
-	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
 	journalEntries := []smodels.JournalEntry{
-		{Account: fmt.Sprintf("%d", cashAccountID), Debit: fmt.Sprintf("%f", priceAfterDiscount), Credit: ""},
+		{Account: fmt.Sprintf("%d", cashAccountID.Int32), Debit: fmt.Sprintf("%f", priceAfterDiscount), Credit: ""},
 		{Account: fmt.Sprintf("%d", SparePartsSalesAccountID), Debit: "", Credit: fmt.Sprintf("%f", priceAfterDiscount)},
 		{Account: fmt.Sprintf("%d", SparePartsCostOfSalesAccountID), Debit: fmt.Sprintf("%f", costPriceWithoutLCs), Credit: ""},
 		{Account: fmt.Sprintf("%d", StockAccountID), Debit: "", Credit: fmt.Sprintf("%f", costPriceWithoutLCs)},
