@@ -31,7 +31,7 @@ const (
 
 func (m *Transactions) GetSalesCommission(uid int) (models.CashInHand, error) {
 	var r models.CashInHand
-	err := m.DB.QueryRow(queries.GET_SALES_COMMISSION, uid, uid).Scan(&r.Amount)
+	err := m.DB.QueryRow(queries.GET_SALES_COMMISSION, uid).Scan(&r.Amount)
 	if err != nil {
 		return models.CashInHand{}, nil
 	}
