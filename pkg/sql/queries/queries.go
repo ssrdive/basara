@@ -189,6 +189,11 @@ const GET_CASH_IN_HAND = `
 	WHERE AT.account_id = (SELECT account_id FROM user WHERE id = ?)
 `
 
+const SALES_COMMISSION = `
+	SELECT ROUND(COALESCE(SUM(price_after_discount-cost_price)*0.4, 0), 2)
+	FROM invoice WHERE YEAR(created) = YEAR(NOW()) AND MONTH(created) = MONTH(NOW()) AND user_id = ?
+`
+
 const INVOICE_SEARCH = `
 	SELECT I.id, I.created, U.name AS issuer, BP.name AS issuing_location, cost_price, price_before_discount, discount, price_after_discount, customer_name, customer_contact
 	FROM invoice I

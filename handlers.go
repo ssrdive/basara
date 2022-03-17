@@ -676,6 +676,25 @@ func (app *application) getPendingInventoryTransfers(w http.ResponseWriter, r *h
 	json.NewEncoder(w).Encode(pendingTransfers)
 }
 
+func (app *application) salesCommission(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	uid, err := strconv.Atoi(vars["uid"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	inventoryTransferItems, err := app.transactions.GetSalesCommission(uid)
+
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(inventoryTransferItems)
+}
+
 func (app *application) cashInHand(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := strconv.Atoi(vars["uid"])
