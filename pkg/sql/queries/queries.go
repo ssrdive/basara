@@ -189,7 +189,7 @@ const GET_CASH_IN_HAND = `
 	WHERE AT.account_id = (SELECT account_id FROM user WHERE id = ?)
 `
 
-const SALES_COMMISSION = `
+const GET_SALES_COMMISSION = `
 	SELECT ROUND(COALESCE(SUM(price_after_discount-cost_price)*0.4, 0), 2)
 	FROM invoice WHERE YEAR(created) = YEAR(NOW()) AND MONTH(created) = MONTH(NOW()) AND user_id = ?
 `
