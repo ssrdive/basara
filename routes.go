@@ -42,6 +42,11 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/{tid}", app.validateToken(http.HandlerFunc(app.accountTransaction))).Methods("GET")
 	r.Handle("/account/trialbalance", app.validateToken(http.HandlerFunc(app.accountTrialBalance))).Methods("GET")
 
+	r.Handle("/account/journalentryaudit", app.validateToken(http.HandlerFunc(app.journalEntryAudit))).Methods("GET")
+	r.Handle("/account/balancesforreporting", app.validateToken(http.HandlerFunc(app.accountBalancesForReporting))).Methods("GET")
+	r.Handle("/account/balancesheetsummary", app.validateToken(http.HandlerFunc(app.balanceSheetSummary))).Methods("GET")
+	r.Handle("/account/pnlsummary", app.validateToken(http.HandlerFunc(app.pnlSummary))).Methods("GET")
+
 	r.Handle("/account/cashinhand/{uid}", app.validateToken(http.HandlerFunc(app.cashInHand))).Methods("GET")
 	r.Handle("/account/commission/{uid}", app.validateToken(http.HandlerFunc(app.salesCommission))).Methods("GET")
 

@@ -528,6 +528,60 @@ func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Reque
 	json.NewEncoder(w).Encode(accounts)
 }
 
+func (app *application) journalEntryAudit(w http.ResponseWriter, r *http.Request) {
+	entrydate := r.URL.Query().Get("entrydate")
+	postingdate := r.URL.Query().Get("postingdate")
+
+	results, err := app.account.JournalEntriesForAudit(entrydate, postingdate)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (app *application) pnlSummary(w http.ResponseWriter, r *http.Request) {
+	startDate := r.URL.Query().Get("startdate")
+	endDate := r.URL.Query().Get("enddate")
+
+	results, err := app.account.AccountsForPNL(startDate, endDate)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (app *application) balanceSheetSummary(w http.ResponseWriter, r *http.Request) {
+	postingdate := r.URL.Query().Get("postingdate")
+
+	results, err := app.account.BalanceSheetSummary(postingdate)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
+func (app *application) accountBalancesForReporting(w http.ResponseWriter, r *http.Request) {
+	postingdate := r.URL.Query().Get("postingdate")
+
+	results, err := app.account.AccountBalancesForReporting(postingdate)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(results)
+}
+
 func (app *application) invoiceSearch(w http.ResponseWriter, r *http.Request) {
 	startDate := r.URL.Query().Get("startdate")
 	_, err := time.Parse("2006-01-02", startDate)
