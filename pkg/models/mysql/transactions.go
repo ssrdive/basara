@@ -130,8 +130,8 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	})
 
 	sort.Slice(warehouseStock, func(i, j int) bool {
-		lValue, _ := strconv.Atoi(transferItems[i].ItemID)
-		rValue, _ := strconv.Atoi(transferItems[j].ItemID)
+		lValue, _ := strconv.Atoi(warehouseStock[i].ItemID)
+		rValue, _ := strconv.Atoi(warehouseStock[j].ItemID)
 		return lValue < rValue
 	})
 
@@ -274,8 +274,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	})
 
 	sort.Slice(warehouseStock, func(i, j int) bool {
-		lValue, _ := strconv.Atoi(invoiceItems[i].ItemID)
-		rValue, _ := strconv.Atoi(invoiceItems[j].ItemID)
+		lValue, _ := strconv.Atoi(warehouseStock[i].ItemID)
+		rValue, _ := strconv.Atoi(warehouseStock[j].ItemID)
 		return lValue < rValue
 	})
 
