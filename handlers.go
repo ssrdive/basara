@@ -131,6 +131,19 @@ func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *
 
 }
 
+func (app *application) dropdownItemsHandler(w http.ResponseWriter, r *http.Request) {
+
+	items, err := app.dropdown.GetItems()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(items)
+
+}
+
 func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
 
 	items, err := app.dropdown.GetGrn()

@@ -18,6 +18,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/dropdown/condition/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionHandler))).Methods("GET")
 	r.Handle("/dropdown/condition/accounts/{name}/{where}/{value}", app.validateToken(http.HandlerFunc(app.dropdownConditionAccountsHandler))).Methods("GET")
 	r.Handle("/dropdown/custom/grn", app.validateToken(http.HandlerFunc(app.dropdownGrnHandler))).Methods("GET")
+	r.Handle("/dropdown/custom/items", app.validateToken(http.HandlerFunc(app.dropdownItemsHandler))).Methods("GET")
 	r.Handle("/dropdown/multicondition/{name}/{where}/{value}/{operator}", app.validateToken(http.HandlerFunc(app.dropdownMultiConditionHandler))).Methods("GET")
 
 	r.Handle("/item/create", app.validateToken(http.HandlerFunc(app.createItem))).Methods("POST")

@@ -136,6 +136,33 @@ func (m *DropdownModel) ConditionAccountsGet(name, where, value string) ([]*mode
 	return items, nil
 }
 
+func (m *DropdownModel) GetItems() ([]*models.Dropdown, error) {
+	stmt := `SELECT I.id AS id, CONCAT(I.item_id, ' (', I.name, ')') AS name FROM item I;`
+	rows, err := m.DB.Query(stmt)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	items := []*models.Dropdown{}
+
+	for rows.Next() {
+		i := &models.Dropdown{}
+
+		err = rows.Scan(&i.ID, &i.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, i)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 func (m *DropdownModel) GetGrn() ([]*models.Dropdown, error) {
 	stmt := `SELECT GRN.id,  concat(GRN.id, ' - ', BP.name) as name FROM goods_received_note GRN LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id WHERE landed_cost_id is null ORDER BY GRN.id ASC`
 	rows, err := m.DB.Query(stmt)
