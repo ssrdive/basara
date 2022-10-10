@@ -77,7 +77,7 @@ const GoodsReceivedNoteDetails = `
 `
 
 const GrnItemDetails = `
-	SELECT GRNI.id, I.name, GRNI.unit_price, GRNI.qty, GRNI.total_price
+	SELECT GRNI.id, I.item_id as item_id, I.name, GRNI.unit_price, GRNI.qty, GRNI.total_price
 	FROM goods_received_note_item GRNI
 	LEFT JOIN item I ON I.id = GRNI.item_id
 	WHERE GRNI.goods_received_note_id = ?

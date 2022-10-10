@@ -149,6 +149,7 @@ type GoodReceivedNoteSummary struct {
 
 type GRNItemDetails struct {
 	GRNID      sql.NullString `json:"grn_id"`
+	ItemID     sql.NullString `json:"item_id"`
 	ItemName   sql.NullString `json:"item_name"`
 	UnitPrice  sql.NullString `json:"unit_price"`
 	Quantity   sql.NullString `json:"quantity"`
