@@ -109,6 +109,7 @@ type PurchaseOrderSummary struct {
 
 type OrderItemDetails struct {
 	OrderID    sql.NullString `json:"order_id"`
+	ItemID     sql.NullString `json:"item_id"`
 	ItemName   sql.NullString `json:"item_name"`
 	UnitPrice  sql.NullString `json:"unit_price"`
 	Quantity   sql.NullString `json:"quantity"`
@@ -132,6 +133,18 @@ type GoodReceivedNoteEntry struct {
 	Supplier   string  `json:"supplier"`
 	Warehouse  string  `json:"warehouse"`
 	TotalPrice float64 `json:"total_price"`
+}
+
+type InventoryTransferEntry struct {
+	ITID              int            `json:"inventory_transfer_id"`
+	Created           string         `json:"created"`
+	Issuer            string         `json:"issuer"`
+	FromWarehouse     string         `json:"from_warehouse"`
+	ToWarehouse       string         `json:"to_warehouse"`
+	Resolution        sql.NullString `json:"resolution"`
+	ResolvedBy        sql.NullString `json:"resolved_by"`
+	ResolvedOn        sql.NullString `json:"resolved_on"`
+	ResolutionRemarks sql.NullString `json:"resolution_remarks"`
 }
 
 type GoodReceivedNoteSummary struct {

@@ -65,11 +65,9 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/warehousestock/{wid}", app.validateToken(http.HandlerFunc(app.getWarehouseStock))).Methods("GET")
 
 	r.Handle("/transaction/inventorytransfer/new", app.validateToken(http.HandlerFunc(app.createInventoryTransfer))).Methods("POST")
-
+	r.Handle("/transaction/inventorytransfer/list", app.validateToken(http.HandlerFunc(app.inventoryTransferList))).Methods("GET")
 	r.Handle("/transaction/inventorytransfer/{type}/{warehouse}", app.validateToken(http.HandlerFunc(app.getPendingInventoryTransfers))).Methods("GET")
-
 	r.Handle("/transaction/inventorytransferitems/{itid}", app.validateToken(http.HandlerFunc(app.inventoryTransferItems))).Methods("GET")
-
 	r.Handle("/transaction/inventorytransferaction", app.validateToken(http.HandlerFunc(app.inventoryTransferAction))).Methods("POST")
 
 	r.Handle("/transaction/invoice", app.validateToken(http.HandlerFunc(app.createInvoice))).Methods("POST")

@@ -57,6 +57,16 @@ func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInve
 	return res, nil
 }
 
+func (m *Transactions) InventoryTransferList() ([]models.InventoryTransferEntry, error) {
+	var res []models.InventoryTransferEntry
+	err := mysequel.QueryToStructs(&res, m.DB, queries.InventoryTransferList)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (m *Transactions) GetWarehouseStock(wid int) ([]models.WarehouseStockItem, error) {
 	var res []models.WarehouseStockItem
 	err := mysequel.QueryToStructs(&res, m.DB, queries.WarehouseStock, wid)

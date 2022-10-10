@@ -876,6 +876,17 @@ func (app *application) createGoodsReceivedNote(w http.ResponseWriter, r *http.R
 	fmt.Fprintf(w, "%d", id)
 }
 
+func (app *application) inventoryTransferList(w http.ResponseWriter, r *http.Request) {
+	notes, err := app.transactions.InventoryTransferList()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(notes)
+}
+
 func (app *application) goodsReceivedNoteList(w http.ResponseWriter, r *http.Request) {
 	notes, err := app.goodsReceivedNote.GoodsReceivedNotesList()
 	if err != nil {

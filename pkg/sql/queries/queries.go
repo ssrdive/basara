@@ -46,7 +46,7 @@ const PurchaseOrderDetails = `
 `
 
 const PurchaseOrderItemDetails = `
-	SELECT OI.id, I.name, OI.unit_price, OI.qty, OI.total_price
+	SELECT OI.id, I.item_id AS item_id, I.name, OI.unit_price, OI.qty, OI.total_price
 	FROM purchase_order_item OI
 	LEFT JOIN item I ON I.id = OI.item_id
 	WHERE OI.purchase_order_id = ?
@@ -65,6 +65,15 @@ const GoodsReceivedNoteList = `
 	LEFT JOIN business_partner BP ON BP.id = GRN.supplier_id
 	LEFT JOIN business_partner BP2 ON BP2.id = GRN.warehouse_id
 	ORDER BY GRN.id ASC
+`
+
+const InventoryTransferList = `
+	SELECT IT.id, IT.created, U.name as issuer, BP.name AS from_warehouse, BP2.name AS to_warehouse, IT.resolution, U2.name as resolved_by, IT.resolved_on, IT.resolution_remarks
+	FROM inventory_transfer IT
+	LEFT JOIN user U ON U.id = IT.user_id
+	LEFT JOIN business_partner BP ON IT.from_warehouse_id = BP.id
+	LEFT JOIN business_partner BP2 ON IT.to_warehouse_id = BP2.id
+	LEFT JOIN user U2 ON U2.id = IT.resolved_by
 `
 
 const GoodsReceivedNoteDetails = `
