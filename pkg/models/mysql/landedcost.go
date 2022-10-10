@@ -122,7 +122,7 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 	}
 
 	var grnItems []models.GRNItemDetailsWithTotal
-	err = mysequel.QueryToStructs(&grnItems, m.DB, queries.GRN_ITEM_DETAILS_WITH_ORDER_TOTAL, form.Get("grn_id"))
+	err = mysequel.QueryToStructs(&grnItems, m.DB, queries.GrnItemDetailsWithOrderTotal, form.Get("grn_id"))
 	if err != nil {
 		return 0, err
 	}

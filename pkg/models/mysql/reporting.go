@@ -17,7 +17,7 @@ func (m *ReportingModel) InvoiceSearch(startDate, endDate, officer string) ([]mo
 	o := mysequel.NewNullString(officer)
 
 	var res []models.InvoiceSearchItem
-	err := mysequel.QueryToStructs(&res, m.DB, queries.INVOICE_SEARCH, o, o, startDate, endDate)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.InvoiceSearch, o, o, startDate, endDate)
 	if err != nil {
 		return nil, err
 	}

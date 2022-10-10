@@ -100,7 +100,7 @@ func (m *PurchaseOrderModel) CreatePurchaseOrder(rparams, oparams []string, form
 
 func (m *PurchaseOrderModel) PurchaseOrderList() ([]models.PurchaseOrderEntry, error) {
 	var res []models.PurchaseOrderEntry
-	err := mysequel.QueryToStructs(&res, m.DB, queries.PURCHASE_ORDER_LIST)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.PurchaseOrderList)
 	if err != nil {
 		return nil, err
 	}
@@ -110,14 +110,14 @@ func (m *PurchaseOrderModel) PurchaseOrderList() ([]models.PurchaseOrderEntry, e
 
 func (m *PurchaseOrderModel) PurchaseOrderDetails(oid int) (models.PurchaseOrderSummary, error) {
 	var id, orderDate, supplier, warehouse, priceBeforeDiscount, discountType, discountAmount, totalPrice, remarks sql.NullString
-	err := m.DB.QueryRow(queries.PURCHASE_ORDER_DETAILS, oid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
+	err := m.DB.QueryRow(queries.PurchaseOrderDetails, oid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
 
 	if err != nil {
 		return models.PurchaseOrderSummary{}, err
 	}
 
 	var orderItems []models.OrderItemDetails
-	err = mysequel.QueryToStructs(&orderItems, m.DB, queries.PURCHASE_ORDER_ITEM_DETAILS, oid)
+	err = mysequel.QueryToStructs(&orderItems, m.DB, queries.PurchaseOrderItemDetails, oid)
 	if err != nil {
 		return models.PurchaseOrderSummary{}, err
 	}
@@ -127,14 +127,14 @@ func (m *PurchaseOrderModel) PurchaseOrderDetails(oid int) (models.PurchaseOrder
 
 func (m *PurchaseOrderModel) PurchaseOrderData(oid int) (models.PurchaseOrderData, error) {
 	var id, supplierId, warehouseId, discountType, discountAmount sql.NullString
-	err := m.DB.QueryRow(queries.PURCHASE_ORDER_DATA, oid).Scan(&id, &supplierId, &warehouseId, &discountType, &discountAmount)
+	err := m.DB.QueryRow(queries.PurchaseOrderData, oid).Scan(&id, &supplierId, &warehouseId, &discountType, &discountAmount)
 
 	if err != nil {
 		return models.PurchaseOrderData{}, err
 	}
 
 	var orderItems []models.OrderItemData
-	err = mysequel.QueryToStructs(&orderItems, m.DB, queries.PURCHASE_ORDER_ITEM_DATA, oid)
+	err = mysequel.QueryToStructs(&orderItems, m.DB, queries.PurchaseOrderItemData, oid)
 	if err != nil {
 		return models.PurchaseOrderData{}, err
 	}

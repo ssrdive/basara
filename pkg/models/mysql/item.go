@@ -75,7 +75,7 @@ func (m *ItemModel) Create(rparams, oparams []string, form url.Values) (int64, e
 // All returns all items
 func (m *ItemModel) All() ([]models.AllItemItem, error) {
 	var res []models.AllItemItem
-	err := mysequel.QueryToStructs(&res, m.DB, queries.ALL_ITEMS)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.AllItems)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func (m *ItemModel) All() ([]models.AllItemItem, error) {
 // DetailsById returns all items
 func (m *ItemModel) DetailsById(id string) (models.ItemDetails, error) {
 	var itemDetails models.ItemDetails
-	err := m.DB.QueryRow(queries.ITEM_DETAILS_BY_ID, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
+	err := m.DB.QueryRow(queries.ItemDetailsById, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
 	if err != nil {
 		return models.ItemDetails{}, err
 	}
@@ -97,7 +97,7 @@ func (m *ItemModel) DetailsById(id string) (models.ItemDetails, error) {
 // All returns all items
 func (m *ItemModel) Details(id string) (models.ItemDetails, error) {
 	var itemDetails models.ItemDetails
-	err := m.DB.QueryRow(queries.ITEM_DETAILS_BY_ITEM_ID, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
+	err := m.DB.QueryRow(queries.ItemDetailsByItemId, id).Scan(&itemDetails.ID, &itemDetails.ItemID, &itemDetails.ModelID, &itemDetails.ModelName, &itemDetails.ItemCategoryID, &itemDetails.ItemCategoryName, &itemDetails.PageNo, &itemDetails.ItemNo, &itemDetails.ForeignID, &itemDetails.ItemName, &itemDetails.Price)
 	if err != nil {
 		return models.ItemDetails{}, err
 	}
@@ -118,7 +118,7 @@ func (m *ItemModel) Search(search string) ([]models.AllItemItem, error) {
 	}
 
 	var res []models.AllItemItem
-	err := mysequel.QueryToStructs(&res, m.DB, queries.SEARCH_ITEMS, k, k)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.SearchItems, k, k)
 	if err != nil {
 		return nil, err
 	}

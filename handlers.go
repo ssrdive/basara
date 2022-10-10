@@ -14,13 +14,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (app *application) home(w http.ResponseWriter, r *http.Request) {
+func (app *application) home(w http.ResponseWriter, _ *http.Request) {
 	// user := app.extractUser(r)
 
 	if app.runtimeEnv == "dev" {
-		fmt.Fprintf(w, "It works! [dev]")
+		_, _ = fmt.Fprintf(w, "It works! [dev]")
 	} else {
-		fmt.Fprintf(w, "It works!")
+		_, _ = fmt.Fprintf(w, "It works!")
 	}
 }
 
@@ -65,7 +65,7 @@ func (app *application) authenticate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
+	_, _ = w.Write(js)
 }
 
 func (app *application) dropdownHandler(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +83,7 @@ func (app *application) dropdownHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -104,7 +104,7 @@ func (app *application) dropdownConditionHandler(w http.ResponseWriter, r *http.
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -127,11 +127,11 @@ func (app *application) dropdownMultiConditionHandler(w http.ResponseWriter, r *
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
-func (app *application) dropdownItemsHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) dropdownItemsHandler(w http.ResponseWriter, _ *http.Request) {
 
 	items, err := app.dropdown.GetItems()
 	if err != nil {
@@ -140,11 +140,11 @@ func (app *application) dropdownItemsHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
-func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) dropdownGrnHandler(w http.ResponseWriter, _ *http.Request) {
 
 	items, err := app.dropdown.GetGrn()
 	if err != nil {
@@ -153,11 +153,11 @@ func (app *application) dropdownGrnHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
-func (app *application) itemTest(w http.ResponseWriter, r *http.Request) {
+func (app *application) itemTest(w http.ResponseWriter, _ *http.Request) {
 	fmt.Fprintf(w, "Item Test")
 }
 
@@ -171,7 +171,7 @@ func (app *application) itemSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) itemDetailsById(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func (app *application) itemDetailsById(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -210,7 +210,7 @@ func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -293,7 +293,7 @@ func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (app *application) allItems(w http.ResponseWriter, r *http.Request) {
+func (app *application) allItems(w http.ResponseWriter, _ *http.Request) {
 	results, err := app.item.All()
 	if err != nil {
 		app.serverError(w, err)
@@ -301,7 +301,7 @@ func (app *application) allItems(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) dropdownConditionAccountsHandler(w http.ResponseWriter, r *http.Request) {
@@ -321,7 +321,7 @@ func (app *application) dropdownConditionAccountsHandler(w http.ResponseWriter, 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -467,10 +467,10 @@ func (app *application) accountLedger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ledger)
+	_ = json.NewEncoder(w).Encode(ledger)
 }
 
-func (app *application) accountChart(w http.ResponseWriter, r *http.Request) {
+func (app *application) accountChart(w http.ResponseWriter, _ *http.Request) {
 	accounts, err := app.account.ChartOfAccounts()
 	if err != nil {
 		app.serverError(w, err)
@@ -478,10 +478,10 @@ func (app *application) accountChart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(accounts)
+	_ = json.NewEncoder(w).Encode(accounts)
 }
 
-func (app *application) paymentVouchers(w http.ResponseWriter, r *http.Request) {
+func (app *application) paymentVouchers(w http.ResponseWriter, _ *http.Request) {
 	items, err := app.account.PaymentVouchers()
 	if err != nil {
 		app.clientError(w, http.StatusBadRequest)
@@ -489,7 +489,7 @@ func (app *application) paymentVouchers(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -508,7 +508,7 @@ func (app *application) paymentVoucherDetails(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(items)
+	_ = json.NewEncoder(w).Encode(items)
 
 }
 
@@ -527,10 +527,10 @@ func (app *application) accountTransaction(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(ledger)
+	_ = json.NewEncoder(w).Encode(ledger)
 }
 
-func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Request) {
+func (app *application) accountTrialBalance(w http.ResponseWriter, _ *http.Request) {
 	accounts, err := app.account.TrialBalance()
 	if err != nil {
 		app.serverError(w, err)
@@ -538,7 +538,7 @@ func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(accounts)
+	_ = json.NewEncoder(w).Encode(accounts)
 }
 
 func (app *application) journalEntryAudit(w http.ResponseWriter, r *http.Request) {
@@ -552,7 +552,7 @@ func (app *application) journalEntryAudit(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) pnlSummary(w http.ResponseWriter, r *http.Request) {
@@ -566,7 +566,7 @@ func (app *application) pnlSummary(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) balanceSheetSummary(w http.ResponseWriter, r *http.Request) {
@@ -579,7 +579,7 @@ func (app *application) balanceSheetSummary(w http.ResponseWriter, r *http.Reque
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) accountBalancesForReporting(w http.ResponseWriter, r *http.Request) {
@@ -592,7 +592,7 @@ func (app *application) accountBalancesForReporting(w http.ResponseWriter, r *ht
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) invoiceSearch(w http.ResponseWriter, r *http.Request) {
@@ -619,7 +619,7 @@ func (app *application) invoiceSearch(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (app *application) createInvoice(w http.ResponseWriter, r *http.Request) {
@@ -740,7 +740,7 @@ func (app *application) getPendingInventoryTransfers(w http.ResponseWriter, r *h
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(pendingTransfers)
+	_ = json.NewEncoder(w).Encode(pendingTransfers)
 }
 
 func (app *application) salesCommission(w http.ResponseWriter, r *http.Request) {
@@ -759,7 +759,7 @@ func (app *application) salesCommission(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(inventoryTransferItems)
+	_ = json.NewEncoder(w).Encode(inventoryTransferItems)
 }
 
 func (app *application) cashInHand(w http.ResponseWriter, r *http.Request) {
@@ -778,7 +778,7 @@ func (app *application) cashInHand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(inventoryTransferItems)
+	_ = json.NewEncoder(w).Encode(inventoryTransferItems)
 }
 
 func (app *application) inventoryTransferItems(w http.ResponseWriter, r *http.Request) {
@@ -797,7 +797,7 @@ func (app *application) inventoryTransferItems(w http.ResponseWriter, r *http.Re
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(inventoryTransferItems)
+	_ = json.NewEncoder(w).Encode(inventoryTransferItems)
 }
 
 func (app *application) getWarehouseStock(w http.ResponseWriter, r *http.Request) {
@@ -816,10 +816,10 @@ func (app *application) getWarehouseStock(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(goodsReceivedNote)
+	_ = json.NewEncoder(w).Encode(goodsReceivedNote)
 }
 
-func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request) {
+func (app *application) purchaseOrderList(w http.ResponseWriter, _ *http.Request) {
 	orders, err := app.purchaseOrder.PurchaseOrderList()
 	if err != nil {
 		app.serverError(w, err)
@@ -827,7 +827,7 @@ func (app *application) purchaseOrderList(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(orders)
+	_ = json.NewEncoder(w).Encode(orders)
 }
 
 func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Request) {
@@ -847,7 +847,7 @@ func (app *application) purchaseOrderDetails(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(purchaseOrder)
+	_ = json.NewEncoder(w).Encode(purchaseOrder)
 
 }
 
@@ -884,7 +884,7 @@ func (app *application) goodsReceivedNoteList(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(notes)
+	_ = json.NewEncoder(w).Encode(notes)
 }
 
 func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.Request) {
@@ -903,7 +903,7 @@ func (app *application) goodsReceivedNoteDetails(w http.ResponseWriter, r *http.
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(goodsReceivedNote)
+	_ = json.NewEncoder(w).Encode(goodsReceivedNote)
 
 }
 
@@ -923,7 +923,7 @@ func (app *application) purchaseOrderData(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(purchaseOrder)
+	_ = json.NewEncoder(w).Encode(purchaseOrder)
 
 }
 

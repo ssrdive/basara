@@ -31,7 +31,7 @@ const (
 
 func (m *Transactions) GetSalesCommission(uid int) (models.CashInHand, error) {
 	var r models.CashInHand
-	err := m.DB.QueryRow(queries.GET_SALES_COMMISSION, uid).Scan(&r.Amount)
+	err := m.DB.QueryRow(queries.GetSalesCommission, uid).Scan(&r.Amount)
 	if err != nil {
 		return models.CashInHand{}, nil
 	}
@@ -40,7 +40,7 @@ func (m *Transactions) GetSalesCommission(uid int) (models.CashInHand, error) {
 
 func (m *Transactions) GetCashInHand(uid int) (models.CashInHand, error) {
 	var r models.CashInHand
-	err := m.DB.QueryRow(queries.GET_CASH_IN_HAND, uid, uid).Scan(&r.Amount)
+	err := m.DB.QueryRow(queries.GetCashInHand, uid, uid).Scan(&r.Amount)
 	if err != nil {
 		return models.CashInHand{}, nil
 	}
@@ -49,7 +49,7 @@ func (m *Transactions) GetCashInHand(uid int) (models.CashInHand, error) {
 
 func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInventoryTransferItem, error) {
 	var res []models.PendingInventoryTransferItem
-	err := mysequel.QueryToStructs(&res, m.DB, queries.INVENTORY_TRANSFER_ITEMS, itid)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.InventoryTransferItems, itid)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (m *Transactions) GetInventoryTransferItems(itid int) ([]models.PendingInve
 
 func (m *Transactions) GetWarehouseStock(wid int) ([]models.WarehouseStockItem, error) {
 	var res []models.WarehouseStockItem
-	err := mysequel.QueryToStructs(&res, m.DB, queries.WAREHOUSE_STOCK, wid)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.WarehouseStock, wid)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +71,9 @@ func (m *Transactions) GetPendingTransfers(warehouse int, userType string) ([]mo
 	var res []models.PendingInventoryTransfer
 	var err error
 	if userType == "Admin" {
-		err = mysequel.QueryToStructs(&res, m.DB, queries.GET_PENDING_TRANSFERS)
+		err = mysequel.QueryToStructs(&res, m.DB, queries.GetPendingTransfers)
 	} else {
-		err = mysequel.QueryToStructs(&res, m.DB, queries.GET_PENDING_TRANSFERS_BY_WAREHOUSE, warehouse)
+		err = mysequel.QueryToStructs(&res, m.DB, queries.GetPendingTransfersByWarehouse, warehouse)
 	}
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	// if the transferring items are present in the source warehouse
 
 	var warehouseStock []models.WarehouseStockItemQty
-	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse_id"), ConvertArrayToString(transferItemIDs)))
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehosueItemQty(form.Get("from_warehouse_id"), ConvertArrayToString(transferItemIDs)))
 	if err != nil {
 		return 0, err
 	}
@@ -157,7 +157,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		itemQty, _ := strconv.Atoi(transferItem.Quantity)
 
 		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDs
-		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS, form.Get("from_warehouse_id"), transferItem.ItemID)
+		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WarehouseItemStockWithDocumentIds, form.Get("from_warehouse_id"), transferItem.ItemID)
 
 		for _, stockItem := range warehouseItemWithDocumentIDs {
 			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse_id"))
@@ -257,7 +257,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	// if the transferring items are present in the source warehouse
 
 	var warehouseStock []models.WarehouseStockItemQty
-	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WAREHOSUE_ITEM_QTY(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehosueItemQty(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -301,7 +301,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		itemQty, _ := strconv.Atoi(invoiceItem.Quantity)
 
 		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDsAndPrices
-		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WAREHOUSE_ITEM_STOCK_WITH_DOCUMENT_IDS_AND_PRICES, form.Get("from_warehouse"), invoiceItem.ItemID)
+		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WarehouseItemStockWithDocumentIdsAndPrices, form.Get("from_warehouse"), invoiceItem.ItemID)
 		if err != nil {
 			tx.Rollback()
 			return 0, err
@@ -334,7 +334,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 
 	var cashAccountID sql.NullInt32
-	err = tx.QueryRow(queries.OFFICER_ACC_NO, form.Get("user_id")).Scan(&cashAccountID)
+	err = tx.QueryRow(queries.OfficerAccNo, form.Get("user_id")).Scan(&cashAccountID)
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -494,7 +494,7 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	}
 
 	var transferItemsForAction []models.InventoryTransferItemForAction
-	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.INVENTORY_TRANSFER_ITEMS_FOR_ACTION, itid)
+	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.InventoryTransferItemsForAction, itid)
 	if err != nil {
 		return 0, err
 	}

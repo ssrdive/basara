@@ -82,7 +82,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 			ids := []interface{}{entry.ItemID, form.Get("order_id")}
 
-			err := m.DB.QueryRow(queries.PURCHASE_ORDER_ITEM_COUNT, ids...).Scan(&id, &orderItemQty, &totalReconciled, &totalCancelled)
+			err := m.DB.QueryRow(queries.PurchaseOrderItemCount, ids...).Scan(&id, &orderItemQty, &totalReconciled, &totalCancelled)
 
 			if err == nil {
 				leftToreconciled := orderItemQty - (totalReconciled + totalCancelled)
@@ -144,7 +144,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 func (m *GoodsReceivedNoteModel) GoodsReceivedNotesList() ([]models.GoodReceivedNoteEntry, error) {
 	var res []models.GoodReceivedNoteEntry
-	err := mysequel.QueryToStructs(&res, m.DB, queries.GOODS_RECEIVED_NOTE_LIST)
+	err := mysequel.QueryToStructs(&res, m.DB, queries.GoodsReceivedNoteList)
 	if err != nil {
 		return nil, err
 	}
@@ -154,14 +154,14 @@ func (m *GoodsReceivedNoteModel) GoodsReceivedNotesList() ([]models.GoodReceived
 
 func (m *GoodsReceivedNoteModel) GoodsReceivedNoteDetails(grnid int) (models.GoodReceivedNoteSummary, error) {
 	var id, orderDate, supplier, warehouse, priceBeforeDiscount, discountType, discountAmount, totalPrice, remarks sql.NullString
-	err := m.DB.QueryRow(queries.GOODS_RECEIVED_NOTE_DETAILS, grnid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
+	err := m.DB.QueryRow(queries.GoodsReceivedNoteDetails, grnid).Scan(&id, &orderDate, &supplier, &warehouse, &priceBeforeDiscount, &discountType, &discountAmount, &totalPrice, &remarks)
 
 	if err != nil {
 		return models.GoodReceivedNoteSummary{}, err
 	}
 
 	var grnItems []models.GRNItemDetails
-	err = mysequel.QueryToStructs(&grnItems, m.DB, queries.GRN_ITEM_DETAILS, grnid)
+	err = mysequel.QueryToStructs(&grnItems, m.DB, queries.GrnItemDetails, grnid)
 	if err != nil {
 		return models.GoodReceivedNoteSummary{}, err
 	}
