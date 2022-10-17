@@ -530,8 +530,10 @@ func (app *application) accountTransaction(w http.ResponseWriter, r *http.Reques
 	_ = json.NewEncoder(w).Encode(ledger)
 }
 
-func (app *application) accountTrialBalance(w http.ResponseWriter, _ *http.Request) {
-	accounts, err := app.account.TrialBalance()
+func (app *application) accountTrialBalance(w http.ResponseWriter, r *http.Request) {
+	postingdate := r.URL.Query().Get("postingdate")
+
+	accounts, err := app.account.TrialBalance(postingdate)
 	if err != nil {
 		app.serverError(w, err)
 		return
