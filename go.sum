@@ -40,6 +40,8 @@ github.com/ssrdive/scribe v0.0.14 h1:DQhoXqw7ZOfIdvlLfzXiFgzICD3ShaD0BBpsKz+EEzs
 github.com/ssrdive/scribe v0.0.14/go.mod h1:1x+voI8glI8eye5Y0pJGZf0qgliwvlRVeLahkqytPPI=
 github.com/ssrdive/scribe v0.0.17 h1:9w8ZKlHxi4DLBMaturEViHXgRa38gU10jDMRIfgTB6o=
 github.com/ssrdive/scribe v0.0.17/go.mod h1:YQkUFRe/hPGym2NrN8+ruTnZ1E5fUzp/gK41sIWrXn4=
+github.com/ssrdive/scribe v0.0.18 h1:Ny17BeF0oSr6a7szV9/CUeC5Btcgsh9K9ZIbjrHD5nA=
+github.com/ssrdive/scribe v0.0.18/go.mod h1:YQkUFRe/hPGym2NrN8+ruTnZ1E5fUzp/gK41sIWrXn4=
 github.com/stretchr/testify v1.2.2 h1:bSDNvY7ZPG5RlJ8otE/7V6gMiyenm9RtJ7IUVIAoJ1w=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
