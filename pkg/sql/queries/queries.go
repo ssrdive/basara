@@ -200,7 +200,7 @@ const GetCashInHand = `
 
 const GetSalesCommission = `
 	SELECT ROUND(COALESCE(SUM(price_after_discount-cost_price)*0.025, 0), 2)
-	FROM invoice WHERE YEAR(created) = YEAR(NOW()) AND MONTH(created) = MONTH(NOW()) AND user_id = ?
+	FROM invoice WHERE YEAR(created) = YEAR(NOW()) AND MONTH(created) = MONTH(NOW()) AND invoice_type_id = 1 AND user_id = ?
 `
 
 const InvoiceSearch = `
