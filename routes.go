@@ -30,6 +30,9 @@ func (app *application) routes() http.Handler {
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
 
 	r.Handle("/businesspartner/create", app.validateToken(http.HandlerFunc(app.createBusinessPartner))).Methods("POST")
+	r.Handle("/businesspartner/balances", app.validateToken(http.HandlerFunc(app.businessPartnerBalances))).Methods("GET")
+	r.Handle("/businesspartner/payment", app.validateToken(http.HandlerFunc(app.businessPartnerPayment))).Methods("POST")
+	r.Handle("/businesspartner/balance/{bpid}", app.validateToken(http.HandlerFunc(app.bpBalanceDetail))).Methods("GET")
 
 	r.Handle("/account/category/new", app.validateToken(http.HandlerFunc(app.newAccountCategory))).Methods("POST")
 	r.Handle("/account/new", app.validateToken(http.HandlerFunc(app.newAccount))).Methods("POST")

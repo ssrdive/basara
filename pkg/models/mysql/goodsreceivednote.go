@@ -40,8 +40,8 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
-		Columns:   []string{"user_id", "purcahse_order_id", "supplier_id", "warehouse_id", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
-		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("discount_type"), form.Get("discount_amount"), 0, form.Get("total_price"), form.Get("remark")},
+		Columns:   []string{"user_id", "purcahse_order_id", "supplier_id", "warehouse_id", "effective_date", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
+		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("effective_date"), form.Get("discount_type"), form.Get("discount_amount"), 0, form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
 

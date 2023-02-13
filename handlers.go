@@ -266,6 +266,17 @@ func (app *application) createBusinessPartner(w http.ResponseWriter, r *http.Req
 
 }
 
+func (app *application) businessPartnerBalances(w http.ResponseWriter, _ *http.Request) {
+	results, err := app.businessPartner.Balances()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(results)
+}
+
 func (app *application) createItem(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -427,6 +438,27 @@ func (app *application) accountJournalEntry(w http.ResponseWriter, r *http.Reque
 	fmt.Fprintf(w, "%v", tid)
 }
 
+func (app *application) businessPartnerPayment(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	
+	requiredParams := []string{"user_id", "posting_date", "effective_date", "from_account_id", "amount", "entries", "remark"}
+	for _, param := range requiredParams {
+		if v := r.PostForm.Get(param); v == "" {
+			fmt.Println(param)
+			app.clientError(w, http.StatusBadRequest)
+			return
+		}
+	}
+
+	tid, err := app.businessPartner.Payment(r.PostForm.Get("user_id"), r.PostForm.Get("posting_date"), r.PostForm.Get("from_account_id"), r.PostForm.Get("amount"), r.PostForm.Get("entries"), r.PostForm.Get("remark"), r.PostForm.Get("effective_date"), r.PostForm.Get("check_number"))
+
+	fmt.Fprintf(w, "%v", tid)
+}
+
 func (app *application) accountPaymentVoucher(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -461,6 +493,24 @@ func (app *application) accountLedger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ledger, err := app.account.Ledger(aid)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(ledger)
+}
+
+func (app *application) bpBalanceDetail(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	bpid, err := strconv.Atoi(vars["bpid"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	ledger, err := app.businessPartner.BPBalanceDetail(bpid)
 	if err != nil {
 		app.serverError(w, err)
 		return
@@ -860,7 +910,7 @@ func (app *application) createGoodsReceivedNote(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	requiredParams := []string{"supplier_id", "warehouse_id", "entries"}
+	requiredParams := []string{"supplier_id", "warehouse_id", "effective_date", "entries"}
 	optionalParams := []string{"remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {

@@ -18,6 +18,8 @@ import (
 
 const (
 	StockAccountID = 183
+
+	PayableAccountID = 302
 )
 
 // LandedCostModel struct holds database instance
@@ -144,21 +146,23 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 		}
 	}
 
-	grnCostPrice := grnItems[0].TotalPrice
-	var supplierAccountID sql.NullInt32
-	err = tx.QueryRow("SELECT account_id FROM business_partner WHERE id = (SELECT supplier_id FROM goods_received_note WHERE id = ?)", form.Get("grn_id")).Scan(&supplierAccountID)
+	var businessPartnerID int32
+	err = tx.QueryRow("SELECT supplier_id FROM goods_received_note WHERE id = ?", form.Get("grn_id")).Scan(&businessPartnerID)
 	if err != nil {
 		return 0, err
 	}
 
-	if !supplierAccountID.Valid {
-		err = errors.New("account id not specified for supplier")
-		return 0, err
-	}
+	grnCostPrice := grnItems[0].TotalPrice
+	_, err = mysequel.Insert(mysequel.Table{
+		TableName: "business_partner_financial",
+		Columns:   []string{"business_partner_id", "type", "amount", "transaction_id"},
+		Vals:      []interface{}{businessPartnerID, "CR", grnCostPrice, tid},
+		Tx:        tx,
+	})
 
 	journalEntries = append(journalEntries,
 		smodels.JournalEntry{Account: fmt.Sprintf("%d", StockAccountID), Debit: fmt.Sprintf("%f", grnCostPrice), Credit: ""},
-		smodels.JournalEntry{Account: fmt.Sprintf("%d", supplierAccountID.Int32), Debit: "", Credit: fmt.Sprintf("%f", grnCostPrice)},
+		smodels.JournalEntry{Account: fmt.Sprintf("%d", PayableAccountID), Debit: "", Credit: fmt.Sprintf("%f", grnCostPrice)},
 	)
 	err = scribe.IssueJournalEntries(tx, tid, journalEntries)
 	if err != nil {

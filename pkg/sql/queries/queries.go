@@ -210,3 +210,19 @@ const InvoiceSearch = `
 	LEFT JOIN business_partner BP ON BP.id = I.warehouse_id
 	WHERE (? IS NULL OR I.user_id = ?) AND DATE(I.created) BETWEEN ? AND ?
 `
+
+const BusinessPartnerBalances = `
+	SELECT BP.id, BP.name AS business_partner, (SUM(CASE WHEN BPF.type = "DR" AND effective_date <= DATE(NOW()) THEN BPF.amount ELSE 0 END) - SUM(CASE WHEN BPF.type = "CR" AND effective_date <= DATE(NOW()) THEN BPF.amount ELSE 0 END)) AS balance_today, (SUM(CASE WHEN BPF.type = "DR" THEN BPF.amount ELSE 0 END) - SUM(CASE WHEN BPF.type = "CR" THEN BPF.amount ELSE 0 END)) AS balance
+	FROM business_partner_financial BPF
+	LEFT JOIN business_partner BP on BPF.business_partner_id = BP.id
+	GROUP BY BPF.business_partner_id
+`
+
+const BusinessPartnerBalanceDetail = `
+	SELECT BP.name AS business_partner_name, T.id AS transaction_id, DATE_FORMAT(T.posting_date, '%Y-%m-%d') AS posting_date, DATE_FORMAT(BPF.effective_date, '%Y-%m-%d') AS effective_date, BPF.type, BPF.amount, T.remark
+	FROM business_partner_financial BPF
+	LEFT JOIN transaction T on BPF.transaction_id = T.id
+	LEFT JOIN business_partner BP on BPF.business_partner_id = BP.id
+	WHERE BPF.business_partner_id = ?
+	ORDER BY BPF.effective_date
+`

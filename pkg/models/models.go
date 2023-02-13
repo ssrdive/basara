@@ -54,6 +54,13 @@ type AllItemItem struct {
 	Price          float64 `json:"price"`
 }
 
+type BusinessPartnerBalance struct {
+	ID           int     `json:"id"`
+	Name         string  `json:"name"`
+	BalanceToday float64 `json:"balance_today"`
+	Balance      float64 `json:"balance"`
+}
+
 type ItemDetails struct {
 	ID               int     `json:"id"`
 	ItemID           string  `json:"item_id"`
@@ -268,4 +275,19 @@ type InvoiceSearchItem struct {
 	PriceAfterDiscount  float64 `json:"price_after_discount"`
 	CustomerName        string  `json:"customer_name"`
 	CustomerContact     string  `json:"customer_contact"`
+}
+
+type BPPaymentEntry struct {
+	BP     string
+	Amount string
+}
+
+type BusinessPartnerBalanceDetail struct {
+	BPName        string  `json:"bp_name"`
+	TransactionID int     `json:"transaction_id"`
+	PostingDate   string  `json:"posting_date"`
+	EffectiveDate string  `json:"effective_date"`
+	Type          string  `json:"type"`
+	Amount        float64 `json:"amount"`
+	Remark        string  `json:"remark"`
 }
