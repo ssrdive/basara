@@ -444,7 +444,7 @@ func (app *application) businessPartnerPayment(w http.ResponseWriter, r *http.Re
 		app.clientError(w, http.StatusBadRequest)
 		return
 	}
-	
+
 	requiredParams := []string{"user_id", "posting_date", "effective_date", "from_account_id", "amount", "entries", "remark"}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {

@@ -2,7 +2,9 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"net/url"
+	"strconv"
 
 	"github.com/ssrdive/basara/pkg/models"
 	"github.com/ssrdive/basara/pkg/sql/queries"
@@ -26,6 +28,19 @@ func (m *ItemModel) UpdateById(form url.Values) (int64, error) {
 		}
 		_ = tx.Commit()
 	}()
+
+	var currentPrice float64
+	err = tx.QueryRow("SELECT price FROM item WHERE id = ?", form.Get("item_id")).Scan(&currentPrice)
+
+	if err != nil {
+		tx.Rollback()
+		return 0, err
+	}
+	updatedPrice, _ := strconv.ParseFloat(form.Get("item_price"), 64)
+
+	if currentPrice > updatedPrice {
+		return 0, errors.New("price cannot be lower than the current price")
+	}
 
 	id, err := mysequel.Update(mysequel.UpdateTable{
 		Table: mysequel.Table{
