@@ -74,6 +74,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/inventorytransferaction", app.validateToken(http.HandlerFunc(app.inventoryTransferAction))).Methods("POST")
 
 	r.Handle("/transaction/invoice", app.validateToken(http.HandlerFunc(app.createInvoice))).Methods("POST")
+	r.Handle("/transaction/invoice/{iid}", app.validateToken(http.HandlerFunc(app.invoiceDetails))).Methods("GET")
 
 	r.Handle("/reporting/invoicesearch", app.validateToken(http.HandlerFunc(app.invoiceSearch))).Methods("GET")
 

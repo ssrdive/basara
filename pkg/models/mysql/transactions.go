@@ -479,6 +479,27 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 }
 
+func (m *Transactions) InvoiceDetails(iid int) (models.InvoiceSummary, error) {
+	var invoiceSummary models.InvoiceSummary
+	err := m.DB.QueryRow(queries.InvoiceDetails, iid).Scan(&invoiceSummary.InvoiceID, &invoiceSummary.IssuedBy,
+		&invoiceSummary.Warehouse, &invoiceSummary.PriceBeforeDiscount, &invoiceSummary.Discount,
+		&invoiceSummary.PriceAfterDiscount, &invoiceSummary.CustomerName, &invoiceSummary.CustomerContact)
+
+	if err != nil {
+		return models.InvoiceSummary{}, err
+	}
+
+	var invoiceItems []models.InvoiceItemDetails
+	err = mysequel.QueryToStructs(&invoiceItems, m.DB, queries.InvoiceItemDetails, iid)
+	if err != nil {
+		return models.InvoiceSummary{}, err
+	}
+
+	invoiceSummary.ItemDetails = invoiceItems
+
+	return invoiceSummary, nil
+}
+
 func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {

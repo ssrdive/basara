@@ -154,6 +154,26 @@ type InventoryTransferEntry struct {
 	ResolutionRemarks sql.NullString `json:"resolution_remarks"`
 }
 
+type InvoiceSummary struct {
+	InvoiceID           int                  `json:"invoice_id"`
+	IssuedBy            string               `json:"issued_by"`
+	Warehouse           string               `json:"warehouse"`
+	PriceBeforeDiscount float64              `json:"price_before_discount"`
+	Discount            float64              `json:"discount"`
+	PriceAfterDiscount  float64              `json:"price_after_discount"`
+	CustomerName        string               `json:"customer_name"`
+	CustomerContact     float64              `json:"customer_contact"`
+	ItemDetails         []InvoiceItemDetails `json:"item_details"`
+}
+
+type InvoiceItemDetails struct {
+	ItemID    int     `json:"item_id"`
+	ItemIDSys string  `json:"item_id_sys"`
+	ItemName  string  `json:"item_name"`
+	Qty       int     `json:"qty"`
+	Price     float64 `json:"price"`
+}
+
 type GoodReceivedNoteSummary struct {
 	GRNID               sql.NullString   `json:"grn_id"`
 	OrderDate           sql.NullString   `json:"order_date"`

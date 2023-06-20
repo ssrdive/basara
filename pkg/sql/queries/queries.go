@@ -92,6 +92,22 @@ const GrnItemDetails = `
 	WHERE GRNI.goods_received_note_id = ?
 `
 
+const InvoiceDetails = `
+	SELECT invoice.id, U.name AS issued_by, BP.name AS warehouse, price_before_discount, discount, price_after_discount, customer_name, customer_contact
+	FROM invoice
+	LEFT JOIN user U ON U.id = invoice.user_id
+	LEFT JOIN business_partner BP ON BP.id = invoice.warehouse_id
+	WHERE invoice.id = ?
+`
+
+const InvoiceItemDetails = `
+	SELECT II.item_id, I.item_id, I.name, SUM(II.qty), II.price
+	FROM invoice_item II
+	LEFT JOIN item I ON II.item_id = I.id
+	WHERE invoice_id = ?
+	GROUP BY II.item_id, II.price
+`
+
 const PurchaseOrderData = `
 	SELECT PO.id,  PO.supplier_id , PO.warehouse_id, PO.discount_type, PO.discount_amount
 	FROM purchase_order PO
