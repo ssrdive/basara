@@ -479,6 +479,29 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 }
 
+func (m *Transactions) InventoryTransferDetails(itid int) (models.InventoryTransferSummary, error) {
+	var inventoryTransferSummary models.InventoryTransferSummary
+	err := m.DB.QueryRow(queries.InventoryTransferDetails, itid).Scan(&inventoryTransferSummary.InventoryTransferID,
+		&inventoryTransferSummary.Created, &inventoryTransferSummary.IssuedBy, &inventoryTransferSummary.FromWarehouse,
+		&inventoryTransferSummary.ToWarehouse, &inventoryTransferSummary.Resolution,
+		&inventoryTransferSummary.ResolvedBy, &inventoryTransferSummary.ResolvedOn,
+		&inventoryTransferSummary.ResolutionRemarks)
+
+	if err != nil {
+		return models.InventoryTransferSummary{}, err
+	}
+
+	var inventoryTransferItems []models.InventoryTransferItemDetails
+	err = mysequel.QueryToStructs(&inventoryTransferItems, m.DB, queries.InventoryTransferItemsDetails, itid)
+	if err != nil {
+		return models.InventoryTransferSummary{}, err
+	}
+
+	inventoryTransferSummary.TransferItems = inventoryTransferItems
+
+	return inventoryTransferSummary, nil
+}
+
 func (m *Transactions) InvoiceDetails(iid int) (models.InvoiceSummary, error) {
 	var invoiceSummary models.InvoiceSummary
 	err := m.DB.QueryRow(queries.InvoiceDetails, iid).Scan(&invoiceSummary.InvoiceID, &invoiceSummary.IssuedBy,

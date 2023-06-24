@@ -174,6 +174,26 @@ type InvoiceItemDetails struct {
 	Price     float64 `json:"price"`
 }
 
+type InventoryTransferSummary struct {
+	InventoryTransferID int                            `json:"inventory_transfer_id"`
+	Created             string                         `json:"created"`
+	IssuedBy            string                         `json:"issued_by"`
+	FromWarehouse       string                         `json:"from_warehouse"`
+	ToWarehouse         string                         `json:"to_warehouse"`
+	Resolution          string                         `json:"resolution"`
+	ResolvedBy          string                         `json:"resolved_by"`
+	ResolvedOn          string                         `json:"resolved_on"`
+	ResolutionRemarks   string                         `json:"resolution_remarks"`
+	TransferItems       []InventoryTransferItemDetails `json:"transfer_items"`
+}
+
+type InventoryTransferItemDetails struct {
+	ItemID    int    `json:"item_id"`
+	ItemIDSys string `json:"item_id_sys"`
+	ItemName  string `json:"item_name"`
+	Qty       int    `json:"qty"`
+}
+
 type GoodReceivedNoteSummary struct {
 	GRNID               sql.NullString   `json:"grn_id"`
 	OrderDate           sql.NullString   `json:"order_date"`

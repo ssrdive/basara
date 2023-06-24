@@ -183,6 +183,27 @@ const GetPendingTransfersByWarehouse = `
 	WHERE resolution IS NULL AND IT.to_warehouse_id = ?
 `
 
+const InventoryTransferDetails = `
+	SELECT IT.id, IT.created, ISS_USR.name AS issued_by, FR_WH.name AS from_warehouse,
+       TO_WH.name AS to_warehouse, IT.resolution, RSV_USR.name AS resolved_by,
+        resolved_on, resolution_remarks
+	FROM inventory_transfer IT
+	LEFT JOIN user ISS_USR ON IT.user_id = ISS_USR.id
+	LEFT JOIN business_partner FR_WH ON IT.from_warehouse_id = FR_WH.id
+	LEFT JOIN business_partner TO_WH ON IT.to_warehouse_id = TO_WH.id
+	LEFT JOIN user RSV_USR ON IT.resolved_by = RSV_USR.id
+	WHERE IT.id = ?
+`
+
+const InventoryTransferItemsDetails = `
+	SELECT I.id, I.item_id, I.name AS item_name, SUM(ITI.qty) AS qty
+	FROM inventory_transfer_item ITI
+	LEFT JOIN item I ON ITI.item_id = I.id
+	WHERE ITI.inventory_transfer_id = ?
+	GROUP BY I.name, I.item_id
+
+`
+
 const InventoryTransferItems = `
 	SELECT I.name AS item_name, I.item_id, SUM(ITI.qty) AS qty
 	FROM inventory_transfer_item ITI

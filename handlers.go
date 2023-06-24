@@ -950,6 +950,27 @@ func (app *application) goodsReceivedNoteList(w http.ResponseWriter, r *http.Req
 	_ = json.NewEncoder(w).Encode(notes)
 }
 
+func (app *application) inventoryTransferDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	itid, err := strconv.Atoi(vars["itid"])
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	inventoryTransfer, err := app.transactions.InventoryTransferDetails(itid)
+
+	if err != nil {
+		fmt.Println(err)
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(inventoryTransfer)
+
+}
+
 func (app *application) invoiceDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	iid, err := strconv.Atoi(vars["iid"])
