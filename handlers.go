@@ -194,6 +194,26 @@ func (app *application) itemDetailsById(w http.ResponseWriter, r *http.Request) 
 
 }
 
+func (app *application) itemStock(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+	if id == "" {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	stocks, err := app.item.Stock(id)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		fmt.Println(err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(stocks)
+
+}
+
 func (app *application) itemDetails(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id := vars["id"]

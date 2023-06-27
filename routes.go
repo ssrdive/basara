@@ -28,6 +28,7 @@ func (app *application) routes() http.Handler {
 	r.Handle("/item/details/byid/{id}", app.validateToken(http.HandlerFunc(app.itemDetailsById))).Methods("GET")
 	r.Handle("/item/update/byid", app.validateToken(http.HandlerFunc(app.updateItemById))).Methods("POST")
 	fileServer := http.FileServer(http.Dir("./ui/static/"))
+	r.Handle("/item/stock/{id}", app.validateToken(http.HandlerFunc(app.itemStock))).Methods("GET")
 
 	r.Handle("/businesspartner/create", app.validateToken(http.HandlerFunc(app.createBusinessPartner))).Methods("POST")
 	r.Handle("/businesspartner/balances", app.validateToken(http.HandlerFunc(app.businessPartnerBalances))).Methods("GET")

@@ -331,3 +331,11 @@ type BusinessPartnerBalanceDetail struct {
 	Amount        float64 `json:"amount"`
 	Remark        string  `json:"remark"`
 }
+
+type CurrentStock struct {
+	Warehouse string `json:"warehouse"`
+	ItemID    string `json:"item_id"`
+	Name      string `json:"item_name"`
+	Qty       int    `json:"qty"`
+	FloatQty  int    `json:"float_qty""`
+}

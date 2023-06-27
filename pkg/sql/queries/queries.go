@@ -263,3 +263,13 @@ const BusinessPartnerBalanceDetail = `
 	WHERE BPF.business_partner_id = ?
 	ORDER BY BPF.effective_date
 `
+
+const ItemStock = `
+	SELECT BP.name AS warehouse, I.item_id, I.name, SUM(CS.qty) AS qty, SUM(CS.float_qty) AS float_qty
+	FROM current_stock CS
+	LEFT JOIN item I ON I.id = CS.item_id
+	LEFT JOIN business_partner BP ON BP.id = CS.warehouse_id
+	WHERE CS.item_id = ?
+	GROUP BY CS.warehouse_id, I.item_id, I.name
+	HAVING SUM(CS.qty) > 0 OR SUM(CS.float_qty) > 0
+`

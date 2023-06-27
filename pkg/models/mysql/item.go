@@ -109,6 +109,17 @@ func (m *ItemModel) DetailsById(id string) (models.ItemDetails, error) {
 	return itemDetails, nil
 }
 
+// Stock returns stock for given item
+func (m *ItemModel) Stock(id string) ([]models.CurrentStock, error) {
+	var res []models.CurrentStock
+	err := mysequel.QueryToStructs(&res, m.DB, queries.ItemStock, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 // All returns all items
 func (m *ItemModel) Details(id string) (models.ItemDetails, error) {
 	var itemDetails models.ItemDetails
