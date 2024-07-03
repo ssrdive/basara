@@ -463,7 +463,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 	message := fmt.Sprintf("Dear Customer, Thank you for your purchase of LKR %s. We look forward to serving you again", humanize.Comma(int64(priceAfterDiscount)))
 
-	telephone := fmt.Sprintf("%s,768237192,703524279,775607777", form.Get("customer_contact"))
+	telephone := fmt.Sprintf("%s,768237192,703524279,775607777, 703524272", form.Get("customer_contact"))
 
 	requestURL := fmt.Sprintf("https://richcommunication.dialog.lk/api/sms/inline/send.php?destination=%s&q=%s&message=%s", telephone, apiKey, url.QueryEscape(message))
 
