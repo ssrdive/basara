@@ -701,7 +701,7 @@ func (app *application) createInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requiredParams := []string{"user_id", "from_warehouse", "customer_contact", "discount", "items"}
+	requiredParams := []string{"user_id", "from_warehouse", "customer_contact", "discount", "items", "request_id"}
 	optionalParams := []string{}
 
 	for _, param := range requiredParams {
@@ -727,7 +727,7 @@ func (app *application) inventoryTransferAction(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	requiredParams := []string{"inventory_transfer_id", "user_id", "resolution", "resolution_remarks"}
+	requiredParams := []string{"inventory_transfer_id", "user_id", "resolution", "resolution_remarks", "request_id"}
 	optionalParams := []string{}
 	for _, param := range requiredParams {
 		if v := r.PostForm.Get(param); v == "" {

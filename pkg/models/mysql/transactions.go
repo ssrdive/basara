@@ -249,6 +249,23 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		return 0, err
 	}
 
+	if requestExists(tx, form.Get("request_id")) {
+		return 0, nil
+	}
+
+	if form.Get("request_id") != "" {
+		_, err := mysequel.Insert(mysequel.Table{
+			TableName: "unique_requests",
+			Columns:   []string{"request_id"},
+			Vals:      []interface{}{form.Get("request_id")},
+			Tx:        tx,
+		})
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
+
 	items := form.Get("items")
 	var invoiceItems []models.TransferItem
 	err = json.Unmarshal([]byte(items), &invoiceItems)
@@ -523,6 +540,15 @@ func (m *Transactions) InvoiceDetails(iid int) (models.InvoiceSummary, error) {
 	return invoiceSummary, nil
 }
 
+func requestExists(tx *sql.Tx, requestId string) bool {
+	var requestDBId int
+	err := tx.QueryRow(queries.RequestPresentCheck, requestId).Scan(&requestDBId)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
 func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form url.Values) (int64, error) {
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -535,6 +561,23 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 		}
 		_ = tx.Commit()
 	}()
+
+	if requestExists(tx, form.Get("request_id")) {
+		return 0, nil
+	}
+
+	if form.Get("request_id") != "" {
+		_, err := mysequel.Insert(mysequel.Table{
+			TableName: "unique_requests",
+			Columns:   []string{"request_id"},
+			Vals:      []interface{}{form.Get("request_id")},
+			Tx:        tx,
+		})
+		if err != nil {
+			tx.Rollback()
+			return 0, err
+		}
+	}
 
 	itid := form.Get("inventory_transfer_id")
 	userID := form.Get("user_id")

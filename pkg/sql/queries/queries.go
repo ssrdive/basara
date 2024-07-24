@@ -273,3 +273,9 @@ const ItemStock = `
 	GROUP BY CS.warehouse_id, I.item_id, I.name
 	HAVING SUM(CS.qty) > 0 OR SUM(CS.float_qty) > 0
 `
+
+const RequestPresentCheck = `
+	SELECT UR.id
+	FROM unique_requests UR
+	WHERE UR.request_id = ?
+`
