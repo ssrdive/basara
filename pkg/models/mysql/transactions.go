@@ -250,6 +250,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 
 	if requestExists(tx, form.Get("request_id")) {
+		tx.Rollback()
 		return 0, nil
 	}
 
