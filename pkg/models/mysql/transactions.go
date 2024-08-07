@@ -255,15 +255,35 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 
 	if form.Get("request_id") != "" {
-		_, err := mysequel.Insert(mysequel.Table{
-			TableName: "unique_requests",
-			Columns:   []string{"request_id"},
-			Vals:      []interface{}{form.Get("request_id")},
-			Tx:        tx,
-		})
-		if err != nil {
-			tx.Rollback()
-			return 0, err
+		if form.Get("execution_type") == "plan" {
+			tx2, err2 := m.DB.Begin()
+			if err2 != nil {
+				tx.Rollback()
+				return 0, err
+			}
+			_, err := mysequel.Insert(mysequel.Table{
+				TableName: "unique_requests",
+				Columns:   []string{"request_id"},
+				Vals:      []interface{}{form.Get("request_id")},
+				Tx:        tx2,
+			})
+			if err != nil {
+				tx.Rollback()
+				tx2.Rollback()
+				return 0, err
+			}
+			tx2.Commit()
+		} else {
+			_, err := mysequel.Insert(mysequel.Table{
+				TableName: "unique_requests",
+				Columns:   []string{"request_id"},
+				Vals:      []interface{}{form.Get("request_id")},
+				Tx:        tx,
+			})
+			if err != nil {
+				tx.Rollback()
+				return 0, err
+			}
 		}
 	}
 
