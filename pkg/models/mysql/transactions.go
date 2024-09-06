@@ -8,6 +8,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/ssrdive/scribe"
 	smodels "github.com/ssrdive/scribe/models"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -21,7 +22,8 @@ import (
 )
 
 type Transactions struct {
-	DB *sql.DB
+	DB                 *sql.DB
+	TransactionsLogger *log.Logger
 }
 
 const (
@@ -93,81 +95,104 @@ func (m *Transactions) GetPendingTransfers(warehouse int, userType string) ([]mo
 }
 
 func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form url.Values) (int64, error) {
+	m.TransactionsLogger.Println("Starting CreateInventoryTransfer function")
+
 	tx, err := m.DB.Begin()
 	if err != nil {
+		m.TransactionsLogger.Printf("Error beginning transaction: %v", err)
 		return 0, err
 	}
 	defer func() {
 		if err != nil {
+			m.TransactionsLogger.Printf("Error occurred, rolling back transaction: %v", err)
 			tx.Rollback()
 			return
 		}
+		m.TransactionsLogger.Println("Committing transaction")
 		_ = tx.Commit()
 	}()
 
 	// Converting JSON transfer entries to structs
-
 	entries := form.Get("entries")
+	m.TransactionsLogger.Printf("Transfer entries JSON: %s", entries)
 	var transferItems []models.TransferItem
-	json.Unmarshal([]byte(entries), &transferItems)
+	err = json.Unmarshal([]byte(entries), &transferItems)
+	if err != nil {
+		m.TransactionsLogger.Printf("Error unmarshalling transfer items: %v", err)
+		return 0, err
+	}
+	m.TransactionsLogger.Printf("Parsed transfer items: %+v", transferItems)
 
 	var transferItemIDs = make([]interface{}, len(transferItems))
-
 	for i, item := range transferItems {
 		transferItemIDs[i] = item.ItemID
 	}
 
+	m.TransactionsLogger.Printf("Transfer item IDs: %v", transferItemIDs)
+
 	// Load warehouse stock with transfer items to validate
 	// if the transferring items are present in the source warehouse
-
 	var warehouseStock []models.WarehouseStockItemQty
 	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehosueItemQty(form.Get("from_warehouse_id"), ConvertArrayToString(transferItemIDs)))
 	if err != nil {
+		m.TransactionsLogger.Printf("Error loading warehouse stock: %v", err)
 		return 0, err
 	}
+	m.TransactionsLogger.Printf("Loaded warehouse stock: %+v", warehouseStock)
 
 	if len(warehouseStock) != len(transferItemIDs) {
-		return 0, errors.New("selected items does not exist in the source warehouse")
+		err = errors.New("selected items do not exist in the source warehouse")
+		m.TransactionsLogger.Println(err.Error())
+		return 0, err
 	}
 
 	// Sorting transfer items / stocks for comparing
 	// quantity validation through single loop
-
 	sort.Slice(transferItems, func(i, j int) bool {
 		lValue, _ := strconv.Atoi(transferItems[i].ItemID)
 		rValue, _ := strconv.Atoi(transferItems[j].ItemID)
 		return lValue < rValue
 	})
-
 	sort.Slice(warehouseStock, func(i, j int) bool {
 		lValue, _ := strconv.Atoi(warehouseStock[i].ItemID)
 		rValue, _ := strconv.Atoi(warehouseStock[j].ItemID)
 		return lValue < rValue
 	})
 
+	m.TransactionsLogger.Printf("Sorted transfer items: %+v", transferItems)
+	m.TransactionsLogger.Printf("Sorted warehouse stock: %+v", warehouseStock)
+
 	// Validate if the transferring quantities are
 	// present in the source warehouse
-
 	for i, transferItem := range transferItems {
 		transferQty, _ := strconv.Atoi(transferItem.Quantity)
 		presentQty, _ := strconv.Atoi(warehouseStock[i].Quantity)
 
+		m.TransactionsLogger.Printf("Validating item ID %s: transferQty = %d, presentQty = %d", transferItem.ItemID, transferQty, presentQty)
+
 		if transferQty > presentQty {
-			return 0, errors.New("transfer quantity is higher than the present quantity")
+			err = errors.New("transfer quantity is higher than the present quantity")
+			m.TransactionsLogger.Println(err.Error())
+			return 0, err
 		}
 	}
 
 	var transfers []models.WarehouseItemStockWithDocumentIDs
 
 	// Select items to be transferred from the source warehouse
-	// based on their goods received note ids. Priority is given to
+	// based on their goods received note IDs. Priority is given to
 	// move the items from old GRNs first.
-
 	for _, transferItem := range transferItems {
 		itemQty, _ := strconv.Atoi(transferItem.Quantity)
+		m.TransactionsLogger.Printf("Preparing transfer for item ID %s with quantity %d", transferItem.ItemID, itemQty)
 
 		var warehouseItemWithDocumentIDs []models.WarehouseItemStockWithDocumentIDs
 		err = mysequel.QueryToStructs(&warehouseItemWithDocumentIDs, m.DB, queries.WarehouseItemStockWithDocumentIds, form.Get("from_warehouse_id"), transferItem.ItemID)
+		if err != nil {
+			m.TransactionsLogger.Printf("Error loading stock with document IDs: %v", err)
+			return 0, err
+		}
+		m.TransactionsLogger.Printf("Loaded warehouse items with document IDs: %+v", warehouseItemWithDocumentIDs)
 
 		for _, stockItem := range warehouseItemWithDocumentIDs {
 			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse_id"))
@@ -179,6 +204,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				subtractQty = stockItem.Qty
 				itemQty = itemQty - stockItem.Qty
 			}
+			m.TransactionsLogger.Printf("Subtracting %d from item ID %s (GoodsReceivedNoteID %s)", subtractQty, stockItem.ItemID, stockItem.GoodsReceivedNoteID)
 			transfers = append(transfers, models.WarehouseItemStockWithDocumentIDs{
 				WarehouseID:         fromWarehouseID,
 				ItemID:              stockItem.ItemID,
@@ -190,6 +216,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				break
 			}
 		}
+		m.TransactionsLogger.Printf("Transfers prepared for item ID %s: %+v", transferItem.ItemID, transfers)
 	}
 
 	itid, err := mysequel.Insert(mysequel.Table{
@@ -199,14 +226,16 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		Tx:        tx,
 	})
 	if err != nil {
+		m.TransactionsLogger.Printf("Error inserting into inventory_transfer: %v", err)
 		return 0, err
 	}
+	m.TransactionsLogger.Printf("Inserted into inventory_transfer with ID %d", itid)
 
 	// Moving the items from the current stock table to
 	// float field for the transferring items based on the
 	// GRN selected. inventory_transfer_item is also populated
-
 	for _, transfer := range transfers {
+		m.TransactionsLogger.Printf("Processing transfer for item ID %s, GoodsReceivedNoteID %s, Quantity %d", transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.Qty)
 		if transfer.InventoryTransferID.Valid {
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "inventory_transfer_item",
@@ -215,11 +244,13 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				Tx:        tx,
 			})
 			if err != nil {
+				m.TransactionsLogger.Printf("Error inserting into inventory_transfer_item: %v", err)
 				return 0, err
 			}
 
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.InventoryTransferID.Int32)
 			if err != nil {
+				m.TransactionsLogger.Printf("Error updating current_stock: %v", err)
 				return 0, err
 			}
 		} else {
@@ -230,16 +261,19 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				Tx:        tx,
 			})
 			if err != nil {
+				m.TransactionsLogger.Printf("Error inserting into inventory_transfer_item (no prev ID): %v", err)
 				return 0, err
 			}
 
 			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID)
 			if err != nil {
+				m.TransactionsLogger.Printf("Error updating current_stock (no prev ID): %v", err)
 				return 0, err
 			}
 		}
 	}
 
+	m.TransactionsLogger.Printf("Successfully completed CreateInventoryTransfer with ID %d", itid)
 	return itid, nil
 }
 

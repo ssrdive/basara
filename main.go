@@ -3,9 +3,11 @@ package main
 import (
 	"database/sql"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ssrdive/basara/pkg/models/mysql"
@@ -46,10 +48,19 @@ func main() {
 	s3bucket := flag.String("bucket", "agrivest", "AWS S3 bucket")
 	fgAPIKey := flag.String("fgAPIKey", "", "FarmGear Text Message API Key")
 	runtimeEnv := flag.String("renv", "prod", "Runtime environment mode")
+	logPath := flag.String("logpath", "/var/www/farmgear.app/logs/", "Path to create or alter log files")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+
+	transactionsLogFile, err := openLogFile(*logPath + time.Now().Format("2006-01-02") + "_transactions.log")
+	if err != nil {
+		fmt.Println("Failed to open transactions log file")
+		os.Exit(1)
+	}
+
+	transactionsLog := log.New(transactionsLogFile, "", log.Ldate|log.Ltime)
 
 	db, err := openDB(*dsn)
 	if err != nil {
@@ -77,7 +88,7 @@ func main() {
 		purchaseOrder:     &mysql.PurchaseOrderModel{DB: db},
 		goodsReceivedNote: &mysql.GoodsReceivedNoteModel{DB: db},
 		landedCost:        &mysql.LandedCostModel{DB: db},
-		transactions:      &mysql.Transactions{DB: db},
+		transactions:      &mysql.Transactions{DB: db, TransactionsLogger: transactionsLog},
 		reporting:         &mysql.ReportingModel{DB: db},
 	}
 
@@ -101,4 +112,8 @@ func openDB(dsn string) (*sql.DB, error) {
 		return nil, err
 	}
 	return db, err
+}
+
+func openLogFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 }
