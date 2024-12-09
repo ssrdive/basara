@@ -3,7 +3,6 @@ package mysql
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"net/url"
 	"strconv"
 
@@ -40,7 +39,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 	grnid, err := mysequel.Insert(mysequel.Table{
 		TableName: "goods_received_note",
-		Columns:   []string{"user_id", "purcahse_order_id", "supplier_id", "warehouse_id", "effective_date", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
+		Columns:   []string{"user_id", "purchase_order_id", "supplier_id", "warehouse_id", "effective_date", "discount_type", "discount_amount", "price_before_discount", "total_price", "remarks"},
 		Vals:      []interface{}{form.Get("user_id"), form.Get("order_id"), form.Get("supplier_id"), form.Get("warehouse_id"), form.Get("effective_date"), form.Get("discount_type"), form.Get("discount_amount"), 0, form.Get("total_price"), form.Get("remark")},
 		Tx:        tx,
 	})
@@ -60,7 +59,6 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 		quantity, err := strconv.ParseFloat(entry.Quantity, 32)
 		if err != nil {
-			fmt.Println(entry)
 			return 0, err
 		}
 
@@ -110,7 +108,7 @@ func (m *GoodsReceivedNoteModel) CreateGoodsReceivedNote(rparams, oparams []stri
 
 				_, err = mysequel.Insert(mysequel.Table{
 					TableName: "purchase_order_item_reconciliation",
-					Columns:   []string{"purcahse_order_id", "goods_received_note_id", "item_id", "qty"},
+					Columns:   []string{"purchase_order_id", "goods_received_note_id", "item_id", "qty"},
 					Vals:      []interface{}{form.Get("order_id"), grnid, entry.ItemID, quantity},
 					Tx:        tx,
 				})

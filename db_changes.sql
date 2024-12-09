@@ -1,0 +1,5 @@
+ALTER TABLE purchase_order_item_reconciliation
+CHANGE COLUMN purcahse_order_id purchase_order_id INT;
+
+ALTER TABLE goods_received_note
+CHANGE COLUMN purcahse_order_id purchase_order_id INT;
