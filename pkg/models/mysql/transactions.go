@@ -129,7 +129,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferItemIDs), form.Get("from_warehouse_id")))
+	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferItemIDs), form.Get("from_warehouse_id")))
 	if err != nil {
 		m.TransactionsLogger.Printf("CreateInventoryTransfer: SELECT FOR UPDATE Failed: %v", err)
 		return 0, err
@@ -343,7 +343,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(invoiceItemIDs), form.Get("from_warehouse")))
+	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(invoiceItemIDs), form.Get("from_warehouse")))
 	if err != nil {
 		m.TransactionsLogger.Printf("CreateInvoice: SELECT FOR UPDATE Failed: %v", err)
 		return 0, err
@@ -665,7 +665,7 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferActionsItemIDs), transferItemsForAction[0].FromWarehouseID))
+	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferActionsItemIDs), transferItemsForAction[0].FromWarehouseID))
 	if err != nil {
 		m.TransactionsLogger.Printf("InventoryTransferAction: SELECT FOR UPDATE Failed: %v", err)
 		return 0, err
