@@ -128,12 +128,19 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		transferItemIDs[i] = item.ItemID
 	}
 
+	// Locking all transfer items from the source warehouse to avoid race conditions
+	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferItemIDs), form.Get("from_warehouse_id")))
+	if err != nil {
+		m.TransactionsLogger.Printf("CreateInventoryTransfer: SELECT FOR UPDATE Failed: %v", err)
+		return 0, err
+	}
+
 	m.TransactionsLogger.Printf("Transfer item IDs: %v", transferItemIDs)
 
 	// Load warehouse stock with transfer items to validate
 	// if the transferring items are present in the source warehouse
 	var warehouseStock []models.WarehouseStockItemQty
-	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehosueItemQty(form.Get("from_warehouse_id"), ConvertArrayToString(transferItemIDs)))
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehouseItemQty(form.Get("from_warehouse_id"), ConvertArrayToString(transferItemIDs)))
 	if err != nil {
 		m.TransactionsLogger.Printf("Error loading warehouse stock: %v", err)
 		return 0, err
@@ -335,11 +342,18 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		invoiceItemIDs[i] = item.ItemID
 	}
 
+	// Locking all transfer items from the source warehouse to avoid race conditions
+	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(invoiceItemIDs), form.Get("from_warehouse")))
+	if err != nil {
+		m.TransactionsLogger.Printf("CreateInvoice: SELECT FOR UPDATE Failed: %v", err)
+		return 0, err
+	}
+
 	// Load warehouse stock with transfer items to validate
 	// if the transferring items are present in the source warehouse
 
 	var warehouseStock []models.WarehouseStockItemQty
-	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehosueItemQty(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
+	err = mysequel.QueryToStructs(&warehouseStock, m.DB, queries.WarehouseItemQty(form.Get("from_warehouse"), ConvertArrayToString(invoiceItemIDs)))
 	if err != nil {
 		tx.Rollback()
 		return 0, err
@@ -639,16 +653,28 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	resolution := form.Get("resolution")
 	resolutionRemarks := form.Get("resolution_remarks")
 
-	var resolvedBy sql.NullInt32
-	err = tx.QueryRow("SELECT resolved_by FROM inventory_transfer WHERE id = ?", itid).Scan(&resolvedBy)
-	if resolvedBy.Valid {
-		return 0, nil
-	}
-
 	var transferItemsForAction []models.InventoryTransferItemForAction
 	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.InventoryTransferItemsForAction, itid)
 	if err != nil {
 		return 0, err
+	}
+
+	var transferActionsItemIDs = make([]interface{}, len(transferItemsForAction))
+	for i, actionItem := range transferItemsForAction {
+		transferActionsItemIDs[i] = actionItem.ItemID
+	}
+
+	// Locking all transfer items from the source warehouse to avoid race conditions
+	_, err = tx.Query(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferActionsItemIDs), transferItemsForAction[0].FromWarehouseID))
+	if err != nil {
+		m.TransactionsLogger.Printf("InventoryTransferAction: SELECT FOR UPDATE Failed: %v", err)
+		return 0, err
+	}
+
+	var resolvedBy sql.NullInt32
+	err = tx.QueryRow("SELECT resolved_by FROM inventory_transfer WHERE id = ?", itid).Scan(&resolvedBy)
+	if resolvedBy.Valid {
+		return 0, nil
 	}
 
 	for _, actionItem := range transferItemsForAction {

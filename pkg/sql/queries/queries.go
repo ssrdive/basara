@@ -56,7 +56,7 @@ const PurchaseOrderItemCount = `
 	SELECT OI.id, OI.qty, OI.total_reconciled, OI.total_cancelled
 	FROM purchase_order_item OI
 	LEFT JOIN item I ON I.id = OI.item_id
-	WHERE OI.item_id = ? AND OI.purchase_order_id = ?
+	WHERE OI.item_id = ? AND OI.purchase_order_id = ? FOR UPDATE;
 `
 
 const GoodsReceivedNoteList = `
@@ -140,7 +140,7 @@ const WarehouseStock = `
 	HAVING SUM(CS.qty) > 0
 `
 
-func WarehosueItemQty(warehouseID, itemIDs interface{}) string {
+func WarehouseItemQty(warehouseID, itemIDs interface{}) string {
 	return fmt.Sprintf(`
 		SELECT CS.item_id, SUM(CS.qty) AS quantity
 		FROM current_stock CS
@@ -153,7 +153,7 @@ const WarehouseItemStockWithDocumentIds = `
 	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty
 	FROM current_stock CS
 	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
-	WHERE CS.warehouse_id = ? AND CS.item_id = ?
+	WHERE CS.warehouse_id = ? AND CS.item_id = ? AND CS.qty > 0
 	ORDER BY GRN.created ASC
 `
 
