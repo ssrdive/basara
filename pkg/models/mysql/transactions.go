@@ -12,8 +12,10 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ssrdive/basara/pkg/models"
@@ -95,7 +97,7 @@ func (m *Transactions) GetPendingTransfers(warehouse int, userType string) ([]mo
 }
 
 func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form url.Values) (int64, error) {
-	m.TransactionsLogger.Println("Starting CreateInventoryTransfer function")
+	m.TransactionsLogger.Println("\t ---- START: CreateInventoryTransfer ----")
 
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -121,10 +123,16 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		m.TransactionsLogger.Printf("Error unmarshalling transfer items: %v", err)
 		return 0, err
 	}
-	m.TransactionsLogger.Printf("Parsed transfer items: %+v", transferItems)
+	m.TransactionsLogger.Printf("Parsed transfer items:")
+	PrintStructOrSliceAsTable(transferItems, m.TransactionsLogger)
 
 	var transferItemIDs = make([]interface{}, len(transferItems))
 	for i, item := range transferItems {
+		transferQty, _ := strconv.Atoi(item.Quantity)
+		if transferQty < 1 {
+			err = errors.New("invalid transfer quantity")
+			return 0, err
+		}
 		transferItemIDs[i] = item.ItemID
 	}
 
@@ -145,7 +153,8 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		m.TransactionsLogger.Printf("Error loading warehouse stock: %v", err)
 		return 0, err
 	}
-	m.TransactionsLogger.Printf("Loaded warehouse stock: %+v", warehouseStock)
+	m.TransactionsLogger.Printf("Loaded warehouse stock:")
+	PrintStructOrSliceAsTable(warehouseStock, m.TransactionsLogger)
 
 	if len(warehouseStock) != len(transferItemIDs) {
 		err = errors.New("selected items do not exist in the source warehouse")
@@ -166,8 +175,10 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		return lValue < rValue
 	})
 
-	m.TransactionsLogger.Printf("Sorted transfer items: %+v", transferItems)
-	m.TransactionsLogger.Printf("Sorted warehouse stock: %+v", warehouseStock)
+	m.TransactionsLogger.Printf("Sorted transfer items:")
+	PrintStructOrSliceAsTable(transferItems, m.TransactionsLogger)
+	m.TransactionsLogger.Printf("Sorted warehouse stock:")
+	PrintStructOrSliceAsTable(warehouseStock, m.TransactionsLogger)
 
 	// Validate if the transferring quantities are
 	// present in the source warehouse
@@ -199,9 +210,14 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 			m.TransactionsLogger.Printf("Error loading stock with document IDs: %v", err)
 			return 0, err
 		}
-		m.TransactionsLogger.Printf("Loaded warehouse items with document IDs: %+v", warehouseItemWithDocumentIDs)
+		m.TransactionsLogger.Printf("Loaded warehouse items with document IDs:")
+		PrintStructOrSliceAsTable(warehouseItemWithDocumentIDs, m.TransactionsLogger)
 
-		for _, stockItem := range warehouseItemWithDocumentIDs {
+		m.TransactionsLogger.Printf("Starting processing warehouse items for transfers loop")
+		for i, stockItem := range warehouseItemWithDocumentIDs {
+			m.TransactionsLogger.Printf("------------ Loop Index: %d", i)
+			m.TransactionsLogger.Printf("Processing Item:")
+			PrintStructOrSliceAsTable(stockItem, m.TransactionsLogger)
 			fromWarehouseID, _ := strconv.Atoi(form.Get("from_warehouse_id"))
 			subtractQty := 0
 			if stockItem.Qty > itemQty {
@@ -219,10 +235,13 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				InventoryTransferID: stockItem.InventoryTransferID,
 				Qty:                 subtractQty,
 			})
+			m.TransactionsLogger.Printf("Transfers Status:")
+			PrintStructOrSliceAsTable(transfers, m.TransactionsLogger)
 			if itemQty == 0 {
 				break
 			}
 		}
+		m.TransactionsLogger.Printf("End processing warehouse items for transfers loop")
 		m.TransactionsLogger.Printf("Transfers prepared for item ID %s: %+v", transferItem.ItemID, transfers)
 	}
 
@@ -280,7 +299,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		}
 	}
 
-	m.TransactionsLogger.Printf("Successfully completed CreateInventoryTransfer with ID %d", itid)
+	m.TransactionsLogger.Printf("\t ---- END: CreateInventoryTransfer ID: %d ----", itid)
 	return itid, nil
 }
 
@@ -632,21 +651,31 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	}()
 
 	if requestExists(tx, form.Get("request_id")) {
+		m.TransactionsLogger.Printf("Request dropped: %s", form.Get("request_id"))
 		return 0, nil
 	}
 
 	if form.Get("request_id") != "" {
+		tx2, err2 := m.DB.Begin()
+		if err2 != nil {
+			return 0, err
+		}
 		_, err := mysequel.Insert(mysequel.Table{
 			TableName: "unique_requests",
 			Columns:   []string{"request_id"},
 			Vals:      []interface{}{form.Get("request_id")},
-			Tx:        tx,
+			Tx:        tx2,
 		})
 		if err != nil {
-			tx.Rollback()
+			_ = tx2.Rollback()
 			return 0, err
 		}
+		_ = tx2.Commit()
 	}
+
+	timestamp := time.Now().Format("2006-01-02 15:04:05.000")
+
+	m.TransactionsLogger.Println("Log Time: " + time.Now().Format("2006-01-02 15:04:05.000") + " Start Time: " + timestamp + " Request Received: " + form.Get("request_id"))
 
 	itid := form.Get("inventory_transfer_id")
 	userID := form.Get("user_id")
@@ -656,8 +685,10 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	var transferItemsForAction []models.InventoryTransferItemForAction
 	err = mysequel.QueryToStructs(&transferItemsForAction, m.DB, queries.InventoryTransferItemsForAction, itid)
 	if err != nil {
+		m.TransactionsLogger.Println(err)
 		return 0, err
 	}
+	m.TransactionsLogger.Println("Log Time: " + time.Now().Format("2006-01-02 15:04:05.000") + " Start Time: " + timestamp + " Lock Aquired: " + form.Get("request_id"))
 
 	var transferActionsItemIDs = make([]interface{}, len(transferItemsForAction))
 	for i, actionItem := range transferItemsForAction {
@@ -669,6 +700,11 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	if err != nil {
 		m.TransactionsLogger.Printf("InventoryTransferAction: SELECT FOR UPDATE Failed: %v", err)
 		return 0, err
+	}
+	time.Sleep(2 * time.Second)
+	if requestExists(tx, form.Get("request_id")) {
+		m.TransactionsLogger.Println("Request dropped: " + form.Get("request_id"))
+		return 0, nil
 	}
 
 	var resolvedBy sql.NullInt32
@@ -684,16 +720,26 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 			var price float64
 			if actionItem.PrevInventoryTransferID.Valid {
 				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+				if err != nil {
+					m.TransactionsLogger.Println(err)
+					return 0, err
+				}
 
 				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
+					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 			} else {
 				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				if err != nil {
+					m.TransactionsLogger.Println(err)
+					return 0, err
+				}
 
 				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
+					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 			}
@@ -705,17 +751,20 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 				Tx:        tx,
 			})
 			if err != nil {
+				m.TransactionsLogger.Println(err)
 				return 0, err
 			}
 		} else if resolution == "Rejected" {
 			if actionItem.PrevInventoryTransferID.Valid {
 				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
 				if err != nil {
+					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 			} else {
 				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
 				if err != nil {
+					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 			}
@@ -733,9 +782,11 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 		WVals:    []string{itid},
 	})
 	if err != nil {
+		m.TransactionsLogger.Println(err)
 		return 0, err
 	}
 
+	m.TransactionsLogger.Println("Log Time: " + time.Now().Format("2006-01-02 15:04:05.000") + " Start Time: " + timestamp + " Transfer Complete: " + form.Get("request_id"))
 	return 0, nil
 }
 
@@ -749,4 +800,94 @@ func ConvertArrayToString(arr []interface{}) string {
 		}
 	}
 	return str
+}
+
+// PrintStructOrSliceAsTable prints a slice of structs or a single struct as a formatted table.
+func PrintStructOrSliceAsTable(data interface{}, logger *log.Logger) {
+	v := reflect.ValueOf(data)
+
+	if v.Kind() == reflect.Slice {
+		if v.Len() == 0 {
+			logger.Println("Slice is empty")
+			return
+		}
+
+		elemType := v.Type().Elem()
+		if elemType.Kind() != reflect.Struct {
+			logger.Println("Slice elements are not structs")
+			return
+		}
+
+		printTable(v, logger)
+	} else if v.Kind() == reflect.Struct {
+		// Wrap single struct into a slice for table printing
+		slice := reflect.MakeSlice(reflect.SliceOf(v.Type()), 1, 1)
+		slice.Index(0).Set(v)
+		printTable(slice, logger)
+	} else {
+		logger.Println("Input is neither a struct nor a slice of structs")
+	}
+}
+
+func printTable(slice reflect.Value, logger *log.Logger) {
+	elemType := slice.Type().Elem()
+	fieldNames := make([]string, elemType.NumField())
+	for i := 0; i < elemType.NumField(); i++ {
+		fieldNames[i] = elemType.Field(i).Name
+	}
+
+	rows := make([][]string, slice.Len()+1)
+	rows[0] = fieldNames
+
+	for i := 0; i < slice.Len(); i++ {
+		row := make([]string, elemType.NumField())
+		structValue := slice.Index(i)
+		for j := 0; j < structValue.NumField(); j++ {
+			value := structValue.Field(j).Interface()
+			row[j] = formatValue(value)
+		}
+		rows[i+1] = row
+	}
+
+	colWidths := make([]int, len(fieldNames))
+	for _, row := range rows {
+		for colIndex, col := range row {
+			if len(col) > colWidths[colIndex] {
+				colWidths[colIndex] = len(col)
+			}
+		}
+	}
+
+	separator := "+"
+	for _, width := range colWidths {
+		separator += strings.Repeat("-", width+2) + "+"
+	}
+	logger.Println(separator)
+
+	for _, row := range rows {
+		line := "|"
+		for colIndex, col := range row {
+			line += " " + formatString(col, colWidths[colIndex]) + " |"
+		}
+		logger.Println(line)
+		logger.Println(separator)
+	}
+}
+
+func formatValue(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return v
+	case int, int32, int64, float32, float64:
+		return strconv.FormatFloat(reflect.ValueOf(value).Convert(reflect.TypeOf(float64(0))).Float(), 'f', -1, 64)
+	default:
+		return fmt.Sprintf("%v", value)
+	}
+}
+
+func formatString(value string, width int) string {
+	if len(value) > width {
+		value = value[:width-3] + "..."
+	}
+	return value
 }
