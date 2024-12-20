@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"github.com/google/uuid"
 	"github.com/ssrdive/scribe"
 	smodels "github.com/ssrdive/scribe/models"
 	"log"
@@ -97,7 +98,9 @@ func (m *Transactions) GetPendingTransfers(warehouse int, userType string) ([]mo
 }
 
 func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form url.Values) (int64, error) {
-	m.TransactionsLogger.Println("\t ---- START: CreateInventoryTransfer ----")
+	m.TransactionsLogger.Println("------------------- START: CreateInventoryTransfer -------------------")
+
+	var err error
 
 	tx, err := m.DB.Begin()
 	if err != nil {
@@ -108,10 +111,12 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		if err != nil {
 			m.TransactionsLogger.Printf("Error occurred, rolling back transaction: %v", err)
 			tx.Rollback()
-			return
+			m.TransactionsLogger.Println("------------------- END: CreateInventoryTransfer -------------------")
+		} else {
+			m.TransactionsLogger.Println("Committing transaction")
+			_ = tx.Commit()
+			m.TransactionsLogger.Println("------------------- END: CreateInventoryTransfer -------------------")
 		}
-		m.TransactionsLogger.Println("Committing transaction")
-		_ = tx.Commit()
 	}()
 
 	// Converting JSON transfer entries to structs
@@ -229,6 +234,7 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 			}
 			m.TransactionsLogger.Printf("Subtracting %d from item ID %s (GoodsReceivedNoteID %s)", subtractQty, stockItem.ItemID, stockItem.GoodsReceivedNoteID)
 			transfers = append(transfers, models.WarehouseItemStockWithDocumentIDs{
+				EntrySpecifier:      stockItem.EntrySpecifier,
 				WarehouseID:         fromWarehouseID,
 				ItemID:              stockItem.ItemID,
 				GoodsReceivedNoteID: stockItem.GoodsReceivedNoteID,
@@ -245,7 +251,8 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		m.TransactionsLogger.Printf("Transfers prepared for item ID %s: %+v", transferItem.ItemID, transfers)
 	}
 
-	itid, err := mysequel.Insert(mysequel.Table{
+	var itid int64
+	itid, err = mysequel.Insert(mysequel.Table{
 		TableName: "inventory_transfer",
 		Columns:   []string{"user_id", "from_warehouse_id", "to_warehouse_id"},
 		Vals:      []interface{}{form.Get("user_id"), form.Get("from_warehouse_id"), form.Get("to_warehouse_id")},
@@ -257,6 +264,8 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	}
 	m.TransactionsLogger.Printf("Inserted into inventory_transfer with ID %d", itid)
 
+	var res sql.Result
+	var rowsAffected int64
 	// Moving the items from the current stock table to
 	// float field for the transferring items based on the
 	// GRN selected. inventory_transfer_item is also populated
@@ -265,8 +274,8 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 		if transfer.InventoryTransferID.Valid {
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "inventory_transfer_item",
-				Columns:   []string{"inventory_transfer_id", "prev_inventory_transfer_id", "goods_received_note_id", "item_id", "qty"},
-				Vals:      []interface{}{itid, transfer.InventoryTransferID.Int32, transfer.GoodsReceivedNoteID, transfer.ItemID, transfer.Qty},
+				Columns:   []string{"entry_specifier", "inventory_transfer_id", "prev_inventory_transfer_id", "goods_received_note_id", "item_id", "qty"},
+				Vals:      []interface{}{transfer.EntrySpecifier, itid, transfer.InventoryTransferID.Int32, transfer.GoodsReceivedNoteID, transfer.ItemID, transfer.Qty},
 				Tx:        tx,
 			})
 			if err != nil {
@@ -274,16 +283,28 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				return 0, err
 			}
 
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.InventoryTransferID.Int32)
+			res, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ? AND entry_specifier = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.InventoryTransferID.Int32, transfer.EntrySpecifier)
 			if err != nil {
 				m.TransactionsLogger.Printf("Error updating current_stock: %v", err)
+				return 0, err
+			}
+
+			rowsAffected, err = res.RowsAffected()
+			if err != nil {
+				m.TransactionsLogger.Printf("Failed to get rows affected: %v", err)
+				return 0, err
+			}
+
+			if rowsAffected != 1 {
+				err = errors.New("ERROR: More than 1 row affected!")
+				m.TransactionsLogger.Printf("ERROR: %v", err)
 				return 0, err
 			}
 		} else {
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "inventory_transfer_item",
-				Columns:   []string{"inventory_transfer_id", "goods_received_note_id", "item_id", "qty"},
-				Vals:      []interface{}{itid, transfer.GoodsReceivedNoteID, transfer.ItemID, transfer.Qty},
+				Columns:   []string{"entry_specifier", "inventory_transfer_id", "goods_received_note_id", "item_id", "qty"},
+				Vals:      []interface{}{transfer.EntrySpecifier, itid, transfer.GoodsReceivedNoteID, transfer.ItemID, transfer.Qty},
 				Tx:        tx,
 			})
 			if err != nil {
@@ -291,15 +312,27 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 				return 0, err
 			}
 
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID)
+			res, err = tx.Exec("UPDATE current_stock SET qty = qty - ?, float_qty = float_qty + ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id IS NULL AND entry_specifier = ?", transfer.Qty, transfer.Qty, form.Get("from_warehouse_id"), transfer.ItemID, transfer.GoodsReceivedNoteID, transfer.EntrySpecifier)
 			if err != nil {
 				m.TransactionsLogger.Printf("Error updating current_stock (no prev ID): %v", err)
+				return 0, err
+			}
+
+			rowsAffected, err = res.RowsAffected()
+			if err != nil {
+				m.TransactionsLogger.Printf("Failed to get rows affected: %v", err)
+				return 0, err
+			}
+
+			if rowsAffected != 1 {
+				err = errors.New("ERROR: More than 1 row affected!")
+				m.TransactionsLogger.Printf("ERROR: %v", err)
 				return 0, err
 			}
 		}
 	}
 
-	m.TransactionsLogger.Printf("\t ---- END: CreateInventoryTransfer ID: %d ----", itid)
+	m.TransactionsLogger.Printf("Completed: CreateInventoryTransfer ID: %d", itid)
 	return itid, nil
 }
 
@@ -433,6 +466,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 				itemQty = itemQty - stockItem.Qty
 			}
 			invoice = append(invoice, models.WarehouseItemStockWithDocumentIDsAndPrices{
+				EntrySpecifier:              stockItem.EntrySpecifier,
 				WarehouseID:                 fromWarehouseID,
 				ItemID:                      stockItem.ItemID,
 				GoodsReceivedNoteID:         stockItem.GoodsReceivedNoteID,
@@ -489,7 +523,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 		price = price + (item.Price * float64(item.Qty))
 		costPriceWithoutLCs = costPriceWithoutLCs + (item.CostPriceWithoutLandedCosts * float64(item.Qty))
 		if item.InventoryTransferID.Valid {
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32)
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ? AND entry_specifier = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32, item.EntrySpecifier)
 			if err != nil {
 				tx.Rollback()
 				return 0, err
@@ -497,8 +531,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "invoice_item",
-				Columns:   []string{"invoice_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "qty", "cost_price", "price"},
-				Vals:      []interface{}{iid, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32, item.Qty, item.CostPrice, item.Price},
+				Columns:   []string{"entry_specifier", "invoice_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "qty", "cost_price", "price"},
+				Vals:      []interface{}{item.EntrySpecifier, iid, item.ItemID, item.GoodsReceivedNoteID, item.InventoryTransferID.Int32, item.Qty, item.CostPrice, item.Price},
 				Tx:        tx,
 			})
 			if err != nil {
@@ -506,7 +540,7 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 				return 0, err
 			}
 		} else {
-			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID)
+			_, err = tx.Exec("UPDATE current_stock SET qty = qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id IS NULL AND entry_specifier = ?", item.Qty, item.WarehouseID, item.ItemID, item.GoodsReceivedNoteID, item.EntrySpecifier)
 			if err != nil {
 				tx.Rollback()
 				return 0, err
@@ -514,8 +548,8 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "invoice_item",
-				Columns:   []string{"invoice_id", "item_id", "goods_received_note_id", "qty", "cost_price", "price"},
-				Vals:      []interface{}{iid, item.ItemID, item.GoodsReceivedNoteID, item.Qty, item.CostPrice, item.Price},
+				Columns:   []string{"entry_specifier", "invoice_id", "item_id", "goods_received_note_id", "qty", "cost_price", "price"},
+				Vals:      []interface{}{item.EntrySpecifier, iid, item.ItemID, item.GoodsReceivedNoteID, item.Qty, item.CostPrice, item.Price},
 				Tx:        tx,
 			})
 			if err != nil {
@@ -719,25 +753,25 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 			var landedCost float64
 			var price float64
 			if actionItem.PrevInventoryTransferID.Valid {
-				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32)
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ? AND entry_specifier = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32, actionItem.EntrySpecifier)
 				if err != nil {
 					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 
-				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32).Scan(&costPrice, &landedCost, &price)
+				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id = ? AND entry_specifier = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.PrevInventoryTransferID.Int32, actionItem.EntrySpecifier).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
 					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 			} else {
-				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				_, err = tx.Exec("UPDATE current_stock SET float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ? AND inventory_transfer_id IS NULL AND entry_specifier = ?", actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.EntrySpecifier)
 				if err != nil {
 					m.TransactionsLogger.Println(err)
 					return 0, err
 				}
 
-				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID).Scan(&costPrice, &landedCost, &price)
+				err = tx.QueryRow("SELECT cost_price, landed_costs, price FROM current_stock WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?  AND inventory_transfer_id IS NULL AND entry_specifier = ?", actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, actionItem.EntrySpecifier).Scan(&costPrice, &landedCost, &price)
 				if err != nil {
 					m.TransactionsLogger.Println(err)
 					return 0, err
@@ -746,8 +780,8 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 
 			_, err = mysequel.Insert(mysequel.Table{
 				TableName: "current_stock",
-				Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
-				Vals:      []interface{}{actionItem.ToWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, itid, costPrice, landedCost, actionItem.Quantity, 0, price},
+				Columns:   []string{"entry_specifier", "warehouse_id", "item_id", "goods_received_note_id", "inventory_transfer_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
+				Vals:      []interface{}{uuid.New(), actionItem.ToWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID, itid, costPrice, landedCost, actionItem.Quantity, 0, price},
 				Tx:        tx,
 			})
 			if err != nil {
@@ -762,7 +796,7 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 					return 0, err
 				}
 			} else {
-				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
+				_, err = tx.Exec("UPDATE current_stock SET qty = qty + ?, float_qty = float_qty - ? WHERE warehouse_id = ? AND item_id = ? AND goods_received_note_id = ?  AND inventory_transfer_id IS NULL", actionItem.Quantity, actionItem.Quantity, actionItem.FromWarehouseID, actionItem.ItemID, actionItem.GoodsReceivedNoteID)
 				if err != nil {
 					m.TransactionsLogger.Println(err)
 					return 0, err
@@ -802,42 +836,43 @@ func ConvertArrayToString(arr []interface{}) string {
 	return str
 }
 
-// PrintStructOrSliceAsTable prints a slice of structs or a single struct as a formatted table.
+// PrintStructOrSliceAsTable prints a single struct or a slice of structs as a formatted table.
 func PrintStructOrSliceAsTable(data interface{}, logger *log.Logger) {
 	v := reflect.ValueOf(data)
 
-	if v.Kind() == reflect.Slice {
+	switch v.Kind() {
+	case reflect.Slice:
 		if v.Len() == 0 {
 			logger.Println("Slice is empty")
 			return
 		}
-
 		elemType := v.Type().Elem()
 		if elemType.Kind() != reflect.Struct {
 			logger.Println("Slice elements are not structs")
 			return
 		}
-
 		printTable(v, logger)
-	} else if v.Kind() == reflect.Struct {
+	case reflect.Struct:
 		// Wrap single struct into a slice for table printing
 		slice := reflect.MakeSlice(reflect.SliceOf(v.Type()), 1, 1)
 		slice.Index(0).Set(v)
 		printTable(slice, logger)
-	} else {
+	default:
 		logger.Println("Input is neither a struct nor a slice of structs")
 	}
 }
 
 func printTable(slice reflect.Value, logger *log.Logger) {
 	elemType := slice.Type().Elem()
+	// Extract field names for the table header
 	fieldNames := make([]string, elemType.NumField())
 	for i := 0; i < elemType.NumField(); i++ {
 		fieldNames[i] = elemType.Field(i).Name
 	}
 
+	// Prepare rows of the table
 	rows := make([][]string, slice.Len()+1)
-	rows[0] = fieldNames
+	rows[0] = fieldNames // Header row
 
 	for i := 0; i < slice.Len(); i++ {
 		row := make([]string, elemType.NumField())
@@ -849,6 +884,7 @@ func printTable(slice reflect.Value, logger *log.Logger) {
 		rows[i+1] = row
 	}
 
+	// Calculate column widths
 	colWidths := make([]int, len(fieldNames))
 	for _, row := range rows {
 		for colIndex, col := range row {
@@ -858,36 +894,52 @@ func printTable(slice reflect.Value, logger *log.Logger) {
 		}
 	}
 
-	separator := "+"
-	for _, width := range colWidths {
-		separator += strings.Repeat("-", width+2) + "+"
+	// Print table with proper alignment and separators
+	printSeparator(colWidths, logger)
+	printRow(rows[0], colWidths, logger) // Print header
+	printSeparator(colWidths, logger)
+	for _, row := range rows[1:] {
+		printRow(row, colWidths, logger)
 	}
-	logger.Println(separator)
-
-	for _, row := range rows {
-		line := "|"
-		for colIndex, col := range row {
-			line += " " + formatString(col, colWidths[colIndex]) + " |"
-		}
-		logger.Println(line)
-		logger.Println(separator)
-	}
+	printSeparator(colWidths, logger)
 }
 
 func formatValue(value interface{}) string {
 	switch v := value.(type) {
 	case string:
 		return v
-	case int, int32, int64, float32, float64:
-		return strconv.FormatFloat(reflect.ValueOf(value).Convert(reflect.TypeOf(float64(0))).Float(), 'f', -1, 64)
+	case int, int32, int64:
+		return strconv.FormatInt(reflect.ValueOf(value).Int(), 10)
+	case uint, uint32, uint64:
+		return strconv.FormatUint(reflect.ValueOf(value).Uint(), 10)
+	case float32, float64:
+		return strconv.FormatFloat(reflect.ValueOf(value).Float(), 'f', -1, 64)
+	case bool:
+		return strconv.FormatBool(v)
 	default:
 		return fmt.Sprintf("%v", value)
 	}
 }
 
-func formatString(value string, width int) string {
-	if len(value) > width {
-		value = value[:width-3] + "..."
+func printSeparator(colWidths []int, logger *log.Logger) {
+	separator := "+"
+	for _, width := range colWidths {
+		separator += strings.Repeat("-", width+2) + "+"
 	}
-	return value
+	logger.Println(separator)
+}
+
+func printRow(row []string, colWidths []int, logger *log.Logger) {
+	line := "|"
+	for colIndex, col := range row {
+		line += " " + padRight(col, colWidths[colIndex]) + " |"
+	}
+	logger.Println(line)
+}
+
+func padRight(str string, length int) string {
+	if len(str) < length {
+		return str + strings.Repeat(" ", length-len(str))
+	}
+	return str
 }

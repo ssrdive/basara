@@ -150,7 +150,7 @@ func WarehouseItemQty(warehouseID, itemIDs interface{}) string {
 }
 
 const WarehouseItemStockWithDocumentIds = `
-	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty
+	SELECT CS.entry_specifier, CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty
 	FROM current_stock CS
 	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
 	WHERE CS.warehouse_id = ? AND CS.item_id = ? AND CS.qty > 0
@@ -158,12 +158,12 @@ const WarehouseItemStockWithDocumentIds = `
 `
 
 const WarehouseItemStockWithDocumentIdsAndPrices = `
-	SELECT CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, 
+	SELECT CS.entry_specifier, CS.warehouse_id, CS.item_id, CS.goods_received_note_id, CS.inventory_transfer_id, CS.qty, 
 	CS.cost_price AS cost_price_without_landed_costs, CS.price AS cost_price, I.price
 	FROM current_stock CS
 	LEFT JOIN goods_received_note GRN ON GRN.id = CS.goods_received_note_id
 	LEFT JOIN item I ON I.id = CS.item_id
-	WHERE CS.warehouse_id = ? AND CS.item_id = ?
+	WHERE CS.warehouse_id = ? AND CS.item_id = ? AND CS.qty > 0
 	ORDER BY GRN.created ASC
 `
 
@@ -213,7 +213,7 @@ const InventoryTransferItems = `
 `
 
 const InventoryTransferItemsForAction = `
-	SELECT IT.from_warehouse_id, IT.to_warehouse_id, ITI.prev_inventory_transfer_id, ITI.goods_received_note_id, item_id, qty
+	SELECT IT.from_warehouse_id, IT.to_warehouse_id, ITI.entry_specifier, ITI.prev_inventory_transfer_id, ITI.goods_received_note_id, item_id, qty
 	FROM inventory_transfer_item ITI
 	LEFT JOIN inventory_transfer IT ON IT.id = ITI.inventory_transfer_id
 	WHERE ITI.inventory_transfer_id = ?

@@ -60,7 +60,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	transactionsLog := log.New(transactionsLogFile, "", log.Ldate|log.Ltime)
+	transactionsLog := log.New(transactionsLogFile, "", log.Ldate|log.Ltime|log.Lshortfile)
 
 	db, err := openDB(*dsn)
 	if err != nil {

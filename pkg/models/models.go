@@ -264,6 +264,7 @@ type WarehouseStockItemQty struct {
 }
 
 type WarehouseItemStockWithDocumentIDs struct {
+	EntrySpecifier      string
 	WarehouseID         int
 	ItemID              int
 	GoodsReceivedNoteID int
@@ -272,6 +273,7 @@ type WarehouseItemStockWithDocumentIDs struct {
 }
 
 type WarehouseItemStockWithDocumentIDsAndPrices struct {
+	EntrySpecifier              string
 	WarehouseID                 int
 	ItemID                      int
 	GoodsReceivedNoteID         int
@@ -298,6 +300,7 @@ type PendingInventoryTransferItem struct {
 type InventoryTransferItemForAction struct {
 	FromWarehouseID         int
 	ToWarehouseID           int
+	EntrySpecifier          string
 	PrevInventoryTransferID sql.NullInt32
 	GoodsReceivedNoteID     int
 	ItemID                  int

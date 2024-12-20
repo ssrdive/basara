@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"net/url"
 	"strconv"
 	"time"
@@ -136,8 +137,8 @@ func (m *LandedCostModel) CreateLandedCost(rparams []string, form url.Values) (i
 
 		_, err = mysequel.Insert(mysequel.Table{
 			TableName: "current_stock",
-			Columns:   []string{"warehouse_id", "item_id", "goods_received_note_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
-			Vals:      []interface{}{entry.WarehouseId, entry.ItemID, form.Get("grn_id"), unitCost, landedCost, entry.Quantity, 0, (unitCost + landedCost)},
+			Columns:   []string{"entry_specifier", "warehouse_id", "item_id", "goods_received_note_id", "cost_price", "landed_costs", "qty", "float_qty", "price"},
+			Vals:      []interface{}{uuid.New(), entry.WarehouseId, entry.ItemID, form.Get("grn_id"), unitCost, landedCost, entry.Quantity, 0, (unitCost + landedCost)},
 			Tx:        tx,
 		})
 
