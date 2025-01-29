@@ -142,11 +142,11 @@ func (m *Transactions) CreateInventoryTransfer(rparams, oparams []string, form u
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferItemIDs), form.Get("from_warehouse_id")))
-	if err != nil {
-		m.TransactionsLogger.Printf("CreateInventoryTransfer: SELECT FOR UPDATE Failed: %v", err)
-		return 0, err
-	}
+	//_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferItemIDs), form.Get("from_warehouse_id")))
+	//if err != nil {
+	//	m.TransactionsLogger.Printf("CreateInventoryTransfer: SELECT FOR UPDATE Failed: %v", err)
+	//	return 0, err
+	//}
 
 	m.TransactionsLogger.Printf("Transfer item IDs: %v", transferItemIDs)
 
@@ -395,11 +395,11 @@ func (m *Transactions) CreateInvoice(rparams, oparams []string, apiKey string, f
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(invoiceItemIDs), form.Get("from_warehouse")))
-	if err != nil {
-		m.TransactionsLogger.Printf("CreateInvoice: SELECT FOR UPDATE Failed: %v", err)
-		return 0, err
-	}
+	//_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(invoiceItemIDs), form.Get("from_warehouse")))
+	//if err != nil {
+	//	m.TransactionsLogger.Printf("CreateInvoice: SELECT FOR UPDATE Failed: %v", err)
+	//	return 0, err
+	//}
 
 	// Load warehouse stock with transfer items to validate
 	// if the transferring items are present in the source warehouse
@@ -730,12 +730,12 @@ func (m *Transactions) InventoryTransferAction(rparams, oparams []string, form u
 	}
 
 	// Locking all transfer items from the source warehouse to avoid race conditions
-	_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferActionsItemIDs), transferItemsForAction[0].FromWarehouseID))
-	if err != nil {
-		m.TransactionsLogger.Printf("InventoryTransferAction: SELECT FOR UPDATE Failed: %v", err)
-		return 0, err
-	}
-	time.Sleep(2 * time.Second)
+	//_, err = tx.Exec(fmt.Sprintf("SELECT * FROM current_stock WHERE item_id IN (%v) AND warehouse_id = %v FOR UPDATE", ConvertArrayToString(transferActionsItemIDs), transferItemsForAction[0].FromWarehouseID))
+	//if err != nil {
+	//	m.TransactionsLogger.Printf("InventoryTransferAction: SELECT FOR UPDATE Failed: %v", err)
+	//	return 0, err
+	//}
+	//time.Sleep(2 * time.Second)
 	if requestExists(tx, form.Get("request_id")) {
 		m.TransactionsLogger.Println("Request dropped: " + form.Get("request_id"))
 		return 0, nil
