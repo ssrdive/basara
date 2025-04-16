@@ -185,8 +185,8 @@ const GetPendingTransfersByWarehouse = `
 
 const InventoryTransferDetails = `
 	SELECT IT.id, IT.created, ISS_USR.name AS issued_by, FR_WH.name AS from_warehouse,
-       TO_WH.name AS to_warehouse, IT.resolution, RSV_USR.name AS resolved_by,
-        resolved_on, resolution_remarks
+       TO_WH.name AS to_warehouse, COALESCE(IT.resolution, "") AS resolution, COALESCE(RSV_USR.name, "") AS resolved_by,
+        COALESCE(resolved_on, "") AS resolved_on, COALESCE(resolution_remarks, "") AS resolution_remarks
 	FROM inventory_transfer IT
 	LEFT JOIN user ISS_USR ON IT.user_id = ISS_USR.id
 	LEFT JOIN business_partner FR_WH ON IT.from_warehouse_id = FR_WH.id
