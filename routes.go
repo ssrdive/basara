@@ -79,6 +79,11 @@ func (app *application) routes() http.Handler {
 	r.Handle("/transaction/invoice/{iid}", app.validateToken(http.HandlerFunc(app.invoiceDetails))).Methods("GET")
 
 	r.Handle("/reporting/invoicesearch", app.validateToken(http.HandlerFunc(app.invoiceSearch))).Methods("GET")
+	r.Handle("/bulk/stock/verify", app.validateToken(http.HandlerFunc(app.verifyBulkStock))).Methods("POST")
+	r.Handle("/bulk/stock/compare", app.validateToken(http.HandlerFunc(app.compareBulkStock))).Methods("POST")
+	r.Handle("/bulk/stock/submit", app.validateToken(http.HandlerFunc(app.submitBulkStock))).Methods("POST")
+	r.Handle("/bulk/stock/reports", app.validateToken(http.HandlerFunc(app.getPendingBulkStocks))).Methods("GET")
+	r.Handle("/bulk/stock/reports/{id:[0-9]+}", app.validateToken(http.HandlerFunc(app.getBulkStockDetails))).Methods("GET")
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

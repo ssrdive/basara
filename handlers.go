@@ -1074,3 +1074,131 @@ func (app *application) createLandedCost(w http.ResponseWriter, r *http.Request)
 
 	fmt.Fprintf(w, "%d", id)
 }
+
+func (app *application) verifyBulkStock(w http.ResponseWriter, r *http.Request) {
+	// 10MB limit
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	validationErrors, err := app.bulk.VerifyBulkStock(file)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(validationErrors)
+}
+
+func (app *application) compareBulkStock(w http.ResponseWriter, r *http.Request) {
+	// 10MB limit
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	comparisonResults, validationErrors, err := app.bulk.CompareBulkStock(file)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	// If there are validation errors, return them with a 400 Bad Request
+	if len(validationErrors) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(validationErrors)
+		return
+	}
+
+	// Otherwise, return the comparison results
+	_ = json.NewEncoder(w).Encode(comparisonResults)
+}
+
+func (app *application) submitBulkStock(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	userIDStr := r.FormValue("user_id")
+	userID, err := strconv.Atoi(userIDStr)
+	if err != nil || userID == 0 {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	reportID, validationErrors, err := app.bulk.SubmitBulkStock(userID, file)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if len(validationErrors) > 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(validationErrors)
+		return
+	}
+
+	app.infoLog.Printf("Bulk stock submitted with ID: %d", reportID)
+	fmt.Fprintf(w, "%d", reportID)
+}
+
+func (app *application) getPendingBulkStocks(w http.ResponseWriter, r *http.Request) {
+	reports, err := app.bulk.GetPendingBulkStocks()
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(reports)
+}
+
+func (app *application) getBulkStockDetails(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	reportIDStr := vars["id"]
+	reportID, err := strconv.Atoi(reportIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	details, err := app.bulk.GetBulkStockDetails(reportID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(details)
+}

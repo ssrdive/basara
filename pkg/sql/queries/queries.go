@@ -279,3 +279,40 @@ const RequestPresentCheck = `
 	FROM unique_requests UR
 	WHERE UR.request_id = ?
 `
+
+const GetWarehouseNames = `
+	SELECT name
+	FROM business_partner
+	WHERE business_partner_type_id = 5
+`
+
+const GetItemIDs = `
+	SELECT item_id
+	FROM item
+`
+
+const GetWarehouseIDByName = `
+	SELECT id
+	FROM business_partner
+	WHERE name = ? AND business_partner_type_id = 5
+`
+
+const GetAllItemsWithPrices = `
+	SELECT item_id, name, price
+	FROM item
+`
+
+const GetPendingBulkStockReports = `
+	SELECT BSR.id, BSR.status, BSR.created, U.name AS user_name, BP.name AS warehouse_name 
+	FROM bulk_stock_report BSR
+	JOIN user U ON BSR.user_id = U.id
+	JOIN business_partner BP ON BSR.warehouse_id = BP.id
+	ORDER BY BSR.created DESC
+`
+
+const GetBulkStockReportDetails = `
+	SELECT I.item_id, I.name AS item_name, I.price, BSRI.new_quantity
+	FROM bulk_stock_report_item BSRI
+	JOIN item I ON BSRI.item_id = I.item_id
+	WHERE BSRI.report_id = ?
+`

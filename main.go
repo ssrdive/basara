@@ -35,6 +35,7 @@ type application struct {
 	landedCost        *mysql.LandedCostModel
 	transactions      *mysql.Transactions
 	reporting         *mysql.ReportingModel
+	bulk              *mysql.BulkModel
 }
 
 func main() {
@@ -90,6 +91,7 @@ func main() {
 		landedCost:        &mysql.LandedCostModel{DB: db},
 		transactions:      &mysql.Transactions{DB: db, TransactionsLogger: transactionsLog},
 		reporting:         &mysql.ReportingModel{DB: db},
+		bulk:              &mysql.BulkModel{DB: db},
 	}
 
 	srv := &http.Server{
