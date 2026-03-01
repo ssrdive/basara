@@ -3,12 +3,16 @@ package mysql
 import (
 	"database/sql"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/ssrdive/basara/pkg/models"
 	"github.com/ssrdive/basara/pkg/sql/queries"
 )
 
@@ -414,11 +418,13 @@ func (m *BulkModel) SubmitBulkStock(userID int, file multipart.File) (int64, []B
 
 // BulkStockReport represents a summary of a submitted report
 type BulkStockReport struct {
-	ID            int    `json:"id"`
-	Status        string `json:"status"`
-	Created       string `json:"created"`
-	UserName      string `json:"user_name"`
-	WarehouseName string `json:"warehouse_name"`
+	ID             int            `json:"id"`
+	Status         string         `json:"status"`
+	Created        string         `json:"created"`
+	ActionOn       sql.NullString `json:"action_on"`
+	UserName       string         `json:"user_name"`
+	WarehouseName  string         `json:"warehouse_name"`
+	ActionUserName string         `json:"action_user_name"`
 }
 
 // GetPendingBulkStocks returns a list of all stock reports
@@ -432,7 +438,7 @@ func (m *BulkModel) GetPendingBulkStocks() ([]BulkStockReport, error) {
 	var reports []BulkStockReport
 	for rows.Next() {
 		var report BulkStockReport
-		if err := rows.Scan(&report.ID, &report.Status, &report.Created, &report.UserName, &report.WarehouseName); err != nil {
+		if err := rows.Scan(&report.ID, &report.Status, &report.Created, &report.ActionOn, &report.UserName, &report.WarehouseName, &report.ActionUserName); err != nil {
 			return nil, err
 		}
 		reports = append(reports, report)
@@ -500,4 +506,186 @@ func (m *BulkModel) GetBulkStockDetails(reportID int) ([]ComparisonResult, error
 	}
 
 	return results, nil
+}
+
+// ProcessBulkStockReport approves or rejects a pending stock report
+func (m *BulkModel) ProcessBulkStockReport(reportID int, status string, actionUserID int) error {
+	if status == "REJECTED" {
+		_, err := m.DB.Exec(`
+			UPDATE bulk_stock_report 
+			SET status = 'REJECTED', action_by = ?, action_on = NOW() 
+			WHERE id = ?`, actionUserID, reportID)
+		return err
+	}
+
+	if status != "APPROVED" {
+		return fmt.Errorf("invalid status: %s", status)
+	}
+
+	// 1. Fetch Report Data
+	var creatorID, warehouseID int
+	err := m.DB.QueryRow(`
+		SELECT user_id, warehouse_id 
+		FROM bulk_stock_report 
+		WHERE id = ? AND status = 'PENDING'`, reportID).Scan(&creatorID, &warehouseID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch pending report or report already processed: %v", err)
+	}
+
+	if creatorID == actionUserID {
+		return fmt.Errorf("you cannot approve your own stock report")
+	}
+
+	// 2. Fetch Supplier ID for Stock Correction
+	var supplierID int
+	err = m.DB.QueryRow(`
+		SELECT id 
+		FROM business_partner 
+		WHERE name = 'Stock Re-Correction Supplier' AND business_partner_type_id = 3`).Scan(&supplierID)
+	if err != nil {
+		return fmt.Errorf("stock Re-Correction Supplier not found. Please create it first: %v", err)
+	}
+
+	// 3. Fetch Items
+	rows, err := m.DB.Query(`
+		SELECT I.id, I.item_id, I.price, BSRI.new_quantity 
+		FROM bulk_stock_report_item BSRI
+		JOIN item I ON BSRI.item_id = I.item_id
+		WHERE BSRI.report_id = ?`, reportID)
+	if err != nil {
+		return fmt.Errorf("failed to fetch report items: %v", err)
+	}
+	defer rows.Close()
+
+	var grnItems []models.GRNItemEntry
+	var totalGRNPrice float64
+	var itemIDs []string
+
+	for rows.Next() {
+		var itemPk int
+		var itemID string
+		var price float64
+		var newQty int
+		if err := rows.Scan(&itemPk, &itemID, &price, &newQty); err != nil {
+			return err
+		}
+
+		// Calculate Cost Price (Selling Price * 0.70)
+		costPrice := price * 0.70
+		totalPrice := costPrice * float64(newQty)
+		totalGRNPrice += totalPrice
+
+		// Build GRN Entry
+		grnItems = append(grnItems, models.GRNItemEntry{
+			ItemID:    strconv.Itoa(itemPk),
+			UnitPrice: fmt.Sprintf("%f", costPrice),
+			Quantity:  strconv.Itoa(newQty),
+		})
+
+		itemIDs = append(itemIDs, itemID)
+	}
+	if err = rows.Err(); err != nil {
+		return err
+	}
+
+	if len(grnItems) == 0 {
+		return fmt.Errorf("no items found in report")
+	}
+
+	// 4. Delete existing stock for these items in the specific warehouse
+	tx, err := m.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Using a query with IN clause to delete multiple items
+	placeholders := make([]string, len(itemIDs))
+	args := make([]interface{}, len(itemIDs)+1)
+	args[0] = warehouseID
+	for i, id := range itemIDs {
+		placeholders[i] = "?"
+		args[i+1] = id
+	}
+
+	query := fmt.Sprintf(`
+		DELETE CS FROM current_stock CS
+		JOIN item I ON CS.item_id = I.id
+		WHERE CS.warehouse_id = ? AND I.item_id IN (%s)`, strings.Join(placeholders, ","))
+
+	_, err = tx.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to clear existing stock: %v", err)
+	}
+
+	// Fetch approver and creator names for the remark
+	var approverName, creatorName string
+	m.DB.QueryRow("SELECT name FROM user WHERE id = ?", actionUserID).Scan(&approverName)
+	m.DB.QueryRow("SELECT name FROM user WHERE id = ?", creatorID).Scan(&creatorName)
+
+	// Commit the stock deletion so GRN model can read true state if needed (though GRN only inserts)
+	// It's safer to commit here, then call the independent models.
+	// The independent models create their own transactions.
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit stock clearance: %v", err)
+	}
+
+	// 5. Create GRN
+	grnModel := &GoodsReceivedNoteModel{DB: m.DB}
+	grnEntriesJSON, _ := json.Marshal(grnItems)
+
+	formValues := url.Values{}
+	formValues.Set("user_id", strconv.Itoa(actionUserID))
+	formValues.Set("supplier_id", strconv.Itoa(supplierID))
+	formValues.Set("warehouse_id", strconv.Itoa(warehouseID))
+	formValues.Set("effective_date", time.Now().Format("2006-01-02 15:04:05"))
+	formValues.Set("discount_type", "per")
+	formValues.Set("discount_amount", "0")
+	formValues.Set("total_price", fmt.Sprintf("%f", totalGRNPrice))
+	formValues.Set("remark", fmt.Sprintf("BULK STOCK UPDATE SUBMITTED BY %s, APPROVED BY %s", creatorName, approverName))
+	formValues.Set("entries", string(grnEntriesJSON))
+
+	grnID, err := grnModel.CreateGoodsReceivedNote(nil, nil, formValues)
+	if err != nil {
+		return fmt.Errorf("failed to create GRN: %v", err)
+	}
+
+	// 6. Fetch "Import Tax" Landed Cost Type ID
+	var landedCostTypeID int
+	err = m.DB.QueryRow(`SELECT id FROM landed_cost_type WHERE name = 'Import Tax'`).Scan(&landedCostTypeID)
+	if err != nil {
+		return fmt.Errorf("landed cost type 'Import Tax' not found: %v", err)
+	}
+
+	// 7. Create Landed Cost
+	landedCostModel := &LandedCostModel{DB: m.DB}
+
+	lcItems := []models.LandedCostItemEntry{
+		{
+			CostTypeID: strconv.Itoa(landedCostTypeID),
+			Amount:     "0",
+		},
+	}
+	lcEntriesJSON, _ := json.Marshal(lcItems)
+
+	lcFormValues := url.Values{}
+	lcFormValues.Set("user_id", strconv.Itoa(actionUserID))
+	lcFormValues.Set("grn_id", strconv.FormatInt(grnID, 10))
+	lcFormValues.Set("entries", string(lcEntriesJSON))
+
+	_, err = landedCostModel.CreateLandedCost(nil, lcFormValues)
+	if err != nil {
+		return fmt.Errorf("failed to process landed cost: %v", err)
+	}
+
+	// 8. Update Report Status
+	_, err = m.DB.Exec(`
+		UPDATE bulk_stock_report 
+		SET status = 'APPROVED', action_by = ?, action_on = NOW() 
+		WHERE id = ?`, actionUserID, reportID)
+	if err != nil {
+		return fmt.Errorf("failed to update report status: %v", err)
+	}
+
+	return nil
 }

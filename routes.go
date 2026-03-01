@@ -84,6 +84,8 @@ func (app *application) routes() http.Handler {
 	r.Handle("/bulk/stock/submit", app.validateToken(http.HandlerFunc(app.submitBulkStock))).Methods("POST")
 	r.Handle("/bulk/stock/reports", app.validateToken(http.HandlerFunc(app.getPendingBulkStocks))).Methods("GET")
 	r.Handle("/bulk/stock/reports/{id:[0-9]+}", app.validateToken(http.HandlerFunc(app.getBulkStockDetails))).Methods("GET")
+	r.Handle("/bulk/stock/reports/{id:[0-9]+}/approve", app.validateToken(http.HandlerFunc(app.approveBulkStockReport))).Methods("PUT")
+	r.Handle("/bulk/stock/reports/{id:[0-9]+}/reject", app.validateToken(http.HandlerFunc(app.rejectBulkStockReport))).Methods("PUT")
 
 	r.Handle("/static/", http.StripPrefix("/static", fileServer))
 

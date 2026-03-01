@@ -1202,3 +1202,61 @@ func (app *application) getBulkStockDetails(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(details)
 }
+
+func (app *application) approveBulkStockReport(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	reportIDStr := vars["id"]
+	reportID, err := strconv.Atoi(reportIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	var reqData struct {
+		UserID int `json:"user_id"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&reqData)
+	if err != nil || reqData.UserID == 0 {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = app.bulk.ProcessBulkStockReport(reportID, "APPROVED", reqData.UserID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+}
+
+func (app *application) rejectBulkStockReport(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	reportIDStr := vars["id"]
+	reportID, err := strconv.Atoi(reportIDStr)
+	if err != nil {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	var reqData struct {
+		UserID int `json:"user_id"`
+	}
+	err = json.NewDecoder(r.Body).Decode(&reqData)
+	if err != nil || reqData.UserID == 0 {
+		app.clientError(w, http.StatusBadRequest)
+		return
+	}
+
+	err = app.bulk.ProcessBulkStockReport(reportID, "REJECTED", reqData.UserID)
+	if err != nil {
+		app.serverError(w, err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(w).Encode(map[string]bool{"ok": true})
+}

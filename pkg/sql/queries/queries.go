@@ -303,10 +303,11 @@ const GetAllItemsWithPrices = `
 `
 
 const GetPendingBulkStockReports = `
-	SELECT BSR.id, BSR.status, BSR.created, U.name AS user_name, BP.name AS warehouse_name 
+	SELECT BSR.id, BSR.status, BSR.created, BSR.action_on, U.name AS user_name, BP.name AS warehouse_name, COALESCE(AU.name, '') AS action_user_name
 	FROM bulk_stock_report BSR
 	JOIN user U ON BSR.user_id = U.id
 	JOIN business_partner BP ON BSR.warehouse_id = BP.id
+	LEFT JOIN user AU ON BSR.action_by = AU.id
 	ORDER BY BSR.created DESC
 `
 
